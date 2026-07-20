@@ -2,7 +2,7 @@
 // (`roles` array), plus a per-user `pages` grant array so access to a
 // specific page doesn't require a new role.
 const { kvGet, kvSet } = require('./_kv');
-const { sendJson, requireAuth, logActivity, genId, hasRole } = require('./_util');
+const { sendJson, requireAuth, logActivity, genId, hasRole, normalizeUser } = require('./_util');
 const { hashPin } = require('./_session');
 
 function strip(u) {
@@ -14,7 +14,10 @@ module.exports = async function handler(req, res) {
   const session = await requireAuth(req, res, {});
   if (!session) return;
 
-  const users = (await kvGet('users')) || [];
+  // Normalize on every read so accounts created before multi-role support
+  // (which only have a singular `role` string) still show and edit
+  // correctly instead of appearing to have no roles at all.
+  const users = ((await kvGet('users')) || []).map(normalizeUser);
 
   // Any authenticated user can read the (PIN-free) user list, e.g. to
   // populate a task "assigned to" picker. Writes stay admin-only.

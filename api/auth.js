@@ -1,6 +1,6 @@
 const { kvGet, kvSet } = require('./_kv');
 const { sign, hashPin, verify } = require('./_session');
-const { sendJson, getToken, logActivity } = require('./_util');
+const { sendJson, getToken, logActivity, normalizeUser } = require('./_util');
 
 // Bootstraps the `users` list from BUILT_IN_PINS on first run, so a fresh
 // deployment has at least one admin without a manual seeding step.
@@ -43,8 +43,9 @@ module.exports = async function handler(req, res) {
     if (!pin) return sendJson(res, 400, { error: 'PIN required' });
     const users = await ensureUsers();
     const pinHash = hashPin(pin);
-    const user = users.find((u) => u.pinHash === pinHash && u.active !== false);
-    if (!user) return sendJson(res, 401, { error: 'Invalid PIN' });
+    const found = users.find((u) => u.pinHash === pinHash && u.active !== false);
+    if (!found) return sendJson(res, 401, { error: 'Invalid PIN' });
+    const user = normalizeUser(found);
     const token = sign({ id: user.id, name: user.name, roles: user.roles || [], pages: user.pages || [] });
     await logActivity({ id: user.id, name: user.name }, 'login', 'session', user.id);
     return sendJson(res, 200, {
