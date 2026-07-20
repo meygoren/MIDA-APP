@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
       id: genId('exp'),
       category: body.category || 'other',
       amount: Number(body.amount) || 0,
-      currency: body.currency || 'USD',
+      currency: body.currency || 'RMB',
       description: body.description || '',
       date: body.date || null,
       photoDataUrl: body.photoDataUrl || null,

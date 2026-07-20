@@ -67,7 +67,7 @@ module.exports = async function handler(req, res) {
       id: genId('quote'),
       quoteNumber: `Q-${Date.now().toString().slice(-8)}`,
       buyerId: body.buyerId || null,
-      currency: body.currency || 'USD',
+      currency: body.currency || 'RMB',
       fxNote: body.fxNote || '',
       lineItems: items,
       depositPercent: body.depositPercent || 0,

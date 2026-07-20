@@ -35,7 +35,7 @@ database server to manage.
   `attributes` object so a future category (batteries, solar, ...) doesn't
   need a schema migration
 - Quotes & Invoices — line items with a single negotiated unit price (no
-  quantity-break tiers), multi-currency (USD/RMB/EUR) with a free-text FX
+  quantity-break tiers), multi-currency (RMB default, USD/EUR available) with a free-text FX
   note, deposit %/balance split, status flow draft → sent → accepted →
   deposit paid → in production → balance paid → shipped → closed, print/PDF
   view
@@ -54,7 +54,9 @@ database server to manage.
 - Scheduling — hand-rolled month calendar surfacing quote and PO ready-by
   dates
 - Expenses — photo capture (stored as a data URL, no blob storage wired up
-  yet) + category + Finance/Admin approval
+  yet) + category (built-ins, or type your own under "Other" and optionally
+  save it for reuse) + Finance/Admin approval, plus a period-total stat
+  (last 24h / 7d / 30d / 1y, default 30d) broken out by currency
 - Tasks — generic assignable task list with due dates
 - Reports — revenue by buyer/product, spend by supplier, approved expenses
   by category, open pipeline value, computed on the fly (no stored key)
@@ -67,7 +69,7 @@ WhatsApp Business API inbox.
 - **Inventory:** most stock ships direct from the manufacturer to the
   buyer and isn't held in-house; where it is held, it's pooled across the
   Shanghai and Shenzhen offices rather than tracked per-location in v1.
-- **Quote currency:** multi-currency (USD/RMB/EUR) with a free-text FX
+- **Quote currency:** multi-currency (RMB default, USD/EUR available) with a free-text FX
   note field on the quote, not automatic conversion.
 - **Pricing:** single negotiated price per quote line item — no
   quantity-break tier table.
