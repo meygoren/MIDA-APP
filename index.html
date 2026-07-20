@@ -87,6 +87,11 @@
 
   h2.page-title { margin: 0 0 20px; font-size: 20px; }
   .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+  .list-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+  .list-search { flex: 1; min-width: 180px; max-width: 320px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+  .pager { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .pager-page { font-variant-numeric: tabular-nums; min-width: 44px; text-align: center; }
+  .view-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
   .btn { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-size: 13px; }
   .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
   .btn-primary:hover { background: var(--primary-dark); }
@@ -229,6 +234,8 @@
       'common.confirmDelete': 'Delete this record?',
       'common.loading': 'Loading…',
       'common.none': 'No records yet.',
+      'common.searchPlaceholder': 'Search...',
+      'common.total': 'total',
       'dashboard.title': 'Dashboard',
       'dashboard.buyers': 'Buyers',
       'dashboard.products': 'Products',
@@ -249,6 +256,25 @@
       'stage.negotiating': 'Negotiating',
       'stage.won': 'Won',
       'stage.lost': 'Lost',
+      'crm.customerCode': 'Customer Code',
+      'crm.owner': 'Owner',
+      'crm.group': 'Group',
+      'crm.lastFollowUp': 'Last Follow-up',
+      'crm.never': 'Never',
+      'crm.openSea': 'Open Sea',
+      'crm.logFollowUp': 'Log Follow-up',
+      'crm.claim': 'Claim',
+      'crm.viewAll': 'All',
+      'crm.viewMine': 'My Customers',
+      'crm.viewOpenSea': 'Open Sea',
+      'crm.allGroups': 'All Groups',
+      'crm.additionalContacts': 'Additional Contacts',
+      'crm.addContact': '+ Add contact',
+      'crm.group.potential': 'Potential',
+      'crm.group.new_cooperative': 'New Cooperative',
+      'crm.group.general': 'General',
+      'crm.group.key_cooperative': 'Key Cooperative',
+      'crm.group.sleeping': 'Sleeping',
       'pay.wire': 'Bank Wire / T/T',
       'pay.escrow': 'Alibaba Trade Assurance / Escrow',
       'pay.card': 'Card / PayPal / Stripe',
@@ -436,6 +462,8 @@
       'common.confirmDelete': '确定删除此记录吗？',
       'common.loading': '加载中…',
       'common.none': '暂无记录。',
+      'common.searchPlaceholder': '搜索...',
+      'common.total': '条',
       'dashboard.title': '仪表盘',
       'dashboard.buyers': '买家数',
       'dashboard.products': '产品数',
@@ -456,6 +484,25 @@
       'stage.negotiating': '洽谈中',
       'stage.won': '成交',
       'stage.lost': '流失',
+      'crm.customerCode': '客户编号',
+      'crm.owner': '负责人',
+      'crm.group': '客户分级',
+      'crm.lastFollowUp': '最近跟进',
+      'crm.never': '从未',
+      'crm.openSea': '公海',
+      'crm.logFollowUp': '记录跟进',
+      'crm.claim': '认领',
+      'crm.viewAll': '全部',
+      'crm.viewMine': '我的客户',
+      'crm.viewOpenSea': '公海客户',
+      'crm.allGroups': '所有分级',
+      'crm.additionalContacts': '其他联系人',
+      'crm.addContact': '+ 添加联系人',
+      'crm.group.potential': '潜在客户',
+      'crm.group.new_cooperative': '新合作客户',
+      'crm.group.general': '普通客户',
+      'crm.group.key_cooperative': '重点合作客户',
+      'crm.group.sleeping': '沉睡客户',
       'pay.wire': '银行电汇 / T/T',
       'pay.escrow': '阿里巴巴信保 / 担保交易',
       'pay.card': '信用卡 / PayPal / Stripe',
@@ -705,6 +752,14 @@
     if (!digits) return null;
     const q = text ? `?text=${encodeURIComponent(text)}` : '';
     return `https://wa.me/${digits}${q}`;
+  }
+
+  function timeAgo(ms) {
+    if (!ms) return t('crm.never');
+    const days = Math.floor((Date.now() - ms) / (24 * 60 * 60 * 1000));
+    if (days <= 0) return S.lang === 'zh' ? '今天' : 'Today';
+    if (days === 1) return S.lang === 'zh' ? '1 天前' : '1 day ago';
+    return S.lang === 'zh' ? `${days} 天前` : `${days} days ago`;
   }
 
   // ---------------------------------------------------------------------
@@ -957,39 +1012,104 @@
   }
 
   // ---------------------------------------------------------------------
-  // Generic table page (CRM, Products, Payments) — config-driven CRUD
+  // Shared client-side search + pagination — the KV storage model already
+  // fetches a domain's whole list in one call, so "pagination" here means
+  // capping how many rows get rendered as DOM at once, not a paginated
+  // fetch. Cheap, and the part that actually matters once a list is in the
+  // thousands of rows.
   // ---------------------------------------------------------------------
-  function renderCrudPage({ titleKey, apiPath, page, columns, fields, extraRowActions }) {
+  const DEFAULT_PAGE_SIZE = 50;
+
+  function filterAndPaginate(list, { searchTerm, searchFields, page, pageSize }) {
+    let filtered = list;
+    if (searchTerm && searchFields && searchFields.length) {
+      const q = searchTerm.toLowerCase();
+      filtered = list.filter((item) => searchFields.some((f) => String(item[f] ?? '').toLowerCase().includes(q)));
+    }
+    const size = pageSize || DEFAULT_PAGE_SIZE;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+    const clampedPage = Math.min(Math.max(1, page || 1), totalPages);
+    const start = (clampedPage - 1) * size;
+    return {
+      pageItems: filtered.slice(start, start + size),
+      totalPages,
+      page: clampedPage,
+      totalFiltered: filtered.length,
+    };
+  }
+
+  function pagerHtml(page, totalPages, totalFiltered) {
+    return `
+      <span class="pager-count">${totalFiltered} ${t('common.total')}</span>
+      <button type="button" class="btn btn-sm" data-page-nav="prev" ${page <= 1 ? 'disabled' : ''}>‹</button>
+      <span class="pager-page">${page} / ${totalPages}</span>
+      <button type="button" class="btn btn-sm" data-page-nav="next" ${page >= totalPages ? 'disabled' : ''}>›</button>
+    `;
+  }
+
+  // Wires a search input + pager container that already exist in the DOM.
+  // Calls onChange(searchTerm, page) whenever either changes; caller owns
+  // re-rendering the row data itself.
+  function bindListToolbar({ searchInputId, pagerId, onChange }) {
+    const state = { searchTerm: '', page: 1 };
+    const searchInput = document.getElementById(searchInputId);
+    const pagerEl = document.getElementById(pagerId);
+    searchInput.addEventListener('input', (e) => {
+      state.searchTerm = e.target.value;
+      state.page = 1;
+      onChange(state);
+    });
+    pagerEl.addEventListener('click', (e) => {
+      const nav = e.target.dataset.pageNav;
+      if (!nav) return;
+      state.page += nav === 'next' ? 1 : -1;
+      onChange(state);
+    });
+    return state;
+  }
+
+  // ---------------------------------------------------------------------
+  // Generic table page (Payments, Tasks, Logistics) — config-driven CRUD
+  // ---------------------------------------------------------------------
+  function renderCrudPage({ titleKey, apiPath, page, columns, fields, extraRowActions, searchFields }) {
     contentEl.innerHTML = `
       <h2 class="page-title">${t(titleKey)}</h2>
       <div class="toolbar">
         <div></div>
         <button class="btn btn-primary" id="add-btn">+ ${t('action.add')}</button>
       </div>
+      <div class="list-toolbar">
+        <input type="text" class="list-search" id="list-search-input" placeholder="${esc(t('common.searchPlaceholder'))}">
+        <div class="pager" id="list-pager"></div>
+      </div>
       <div class="card"><table><thead><tr>${columns.map((c) => `<th>${esc(c.label)}</th>`).join('')}<th></th></tr></thead><tbody id="table-body"><tr class="empty-row"><td colspan="${columns.length + 1}">${t('common.loading')}</td></tr></tbody></table></div>
     `;
 
-    async function load() {
-      const list = await api(apiPath);
-      S.cache[apiPath] = list;
+    let fullList = [];
+    const effectiveSearchFields = searchFields || columns.map((c) => c.key).filter(Boolean);
+
+    function renderRows(state) {
+      const { pageItems, totalPages, page: p, totalFiltered } = filterAndPaginate(fullList, {
+        searchTerm: state.searchTerm, searchFields: effectiveSearchFields, page: state.page,
+      });
+      state.page = p;
       const tbody = document.getElementById('table-body');
       if (!tbody) return;
-      if (!list.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="${columns.length + 1}">${t('common.none')}</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = list.map((item) => `
-        <tr>
-          ${columns.map((c) => `<td>${c.render ? c.render(item) : esc(item[c.key] ?? '')}</td>`).join('')}
-          <td>
-            <button class="btn btn-sm edit-btn" data-id="${item.id}">${t('action.edit')}</button>
-            <button class="btn btn-sm btn-danger del-btn" data-id="${item.id}">${t('action.delete')}</button>
-            ${extraRowActions ? extraRowActions(item) : ''}
-          </td>
-        </tr>`).join('');
+      tbody.innerHTML = pageItems.length
+        ? pageItems.map((item) => `
+          <tr>
+            ${columns.map((c) => `<td>${c.render ? c.render(item) : esc(item[c.key] ?? '')}</td>`).join('')}
+            <td>
+              <button class="btn btn-sm edit-btn" data-id="${item.id}">${t('action.edit')}</button>
+              <button class="btn btn-sm btn-danger del-btn" data-id="${item.id}">${t('action.delete')}</button>
+              ${extraRowActions ? extraRowActions(item) : ''}
+            </td>
+          </tr>`).join('')
+        : `<tr class="empty-row"><td colspan="${columns.length + 1}">${t('common.none')}</td></tr>`;
+      document.getElementById('list-pager').innerHTML = pagerHtml(p, totalPages, totalFiltered);
 
       tbody.querySelectorAll('.edit-btn').forEach((btn) => btn.addEventListener('click', () => {
-        const item = list.find((x) => x.id === btn.dataset.id);
+        const item = fullList.find((x) => x.id === btn.dataset.id);
         openModal({
           title: t('action.edit'),
           fields,
@@ -1008,6 +1128,15 @@
         await api(`${apiPath}?id=${btn.dataset.id}`, { method: 'DELETE' });
         load();
       }));
+    }
+
+    const toolbarState = bindListToolbar({ searchInputId: 'list-search-input', pagerId: 'list-pager', onChange: renderRows });
+
+    async function load() {
+      fullList = await api(apiPath);
+      S.cache[apiPath] = fullList;
+      toolbarState.page = 1;
+      renderRows(toolbarState);
     }
 
     document.getElementById('add-btn').addEventListener('click', () => {
@@ -1062,36 +1191,240 @@
   // ---------------------------------------------------------------------
   // Page: CRM
   // ---------------------------------------------------------------------
-  function renderCrm() {
-    renderCrudPage({
-      titleKey: 'crm.title',
-      apiPath: 'customers',
-      page: 'crm',
-      columns: [
-        { key: 'companyName', label: t('crm.companyName') },
-        { key: 'contactName', label: t('crm.contactName') },
-        { key: 'dealStage', label: t('crm.dealStage'), render: (i) => `<span class="badge">${esc(t('stage.' + (i.dealStage || 'lead')))}</span>` },
-        { key: 'contactPhone', label: t('crm.contactPhone') },
-      ],
-      fields: [
-        { name: 'companyName', label: t('crm.companyName'), required: true },
-        { name: 'contactName', label: t('crm.contactName') },
-        { name: 'contactEmail', label: t('crm.contactEmail'), type: 'email' },
-        { name: 'contactPhone', label: t('crm.contactPhone') },
-        { name: 'country', label: t('crm.country') },
-        { name: 'taxId', label: t('crm.taxId') },
-        { name: 'preferredPaymentMethod', label: t('crm.paymentMethod'), type: 'select', options: [
-          { value: 'wire', label: t('pay.wire') },
-          { value: 'escrow', label: t('pay.escrow') },
-          { value: 'card', label: t('pay.card') },
-        ] },
-        { name: 'dealStage', label: t('crm.dealStage'), type: 'select', options: ['lead', 'quoted', 'negotiating', 'won', 'lost'].map((v) => ({ value: v, label: t('stage.' + v) })) },
-        { name: 'notes', label: t('crm.notes'), type: 'textarea' },
-      ],
-      extraRowActions: (item) => {
-        const link = waLink(item.contactPhone, `Hi ${item.contactName || ''}, `);
-        return link ? `<a class="wa-link" href="${link}" target="_blank" rel="noopener">${t('action.whatsapp')}</a>` : '';
-      },
+  const CRM_GROUPS = ['potential', 'new_cooperative', 'general', 'key_cooperative', 'sleeping'];
+
+  async function renderCrm() {
+    if (!S.crmView) S.crmView = 'all';
+    if (!S.crmGroup) S.crmGroup = '';
+
+    contentEl.innerHTML = `
+      <h2 class="page-title">${t('crm.title')}</h2>
+      <div class="toolbar">
+        <div class="view-tabs" id="crm-view-tabs">
+          <button class="btn btn-sm" data-view="all">${t('crm.viewAll')}</button>
+          <button class="btn btn-sm" data-view="mine">${t('crm.viewMine')}</button>
+          <button class="btn btn-sm" data-view="openSea">${t('crm.viewOpenSea')}</button>
+        </div>
+        <button class="btn btn-primary" id="add-btn">+ ${t('action.add')}</button>
+      </div>
+      <div class="list-toolbar">
+        <input type="text" class="list-search" id="list-search-input" placeholder="${esc(t('common.searchPlaceholder'))}">
+        <select id="crm-group-filter" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+          <option value="" ${S.crmGroup === '' ? 'selected' : ''}>${t('crm.allGroups')}</option>
+          ${CRM_GROUPS.map((g) => `<option value="${g}" ${S.crmGroup === g ? 'selected' : ''}>${t('crm.group.' + g)}</option>`).join('')}
+        </select>
+        <div class="pager" id="list-pager"></div>
+      </div>
+      <div class="card"><table><thead><tr>
+        <th>${t('crm.customerCode')}</th><th>${t('crm.companyName')}</th><th>${t('crm.contactName')}</th><th>${t('crm.owner')}</th><th>${t('crm.group')}</th><th>${t('crm.dealStage')}</th><th>${t('crm.lastFollowUp')}</th><th></th>
+      </tr></thead><tbody id="table-body"><tr class="empty-row"><td colspan="8">${t('common.loading')}</td></tr></tbody></table></div>
+    `;
+
+    const [rawCustomers, users] = await Promise.all([api('customers'), api('users').catch(() => [])]);
+    const ownerName = (id) => (users.find((u) => u.id === id) || {}).name || '—';
+
+    function viewFiltered(list) {
+      if (S.crmView === 'mine') list = list.filter((c) => c.ownerId === S.user.id);
+      if (S.crmView === 'openSea') list = list.filter((c) => c.inOpenSea);
+      if (S.crmGroup) list = list.filter((c) => c.group === S.crmGroup);
+      return list;
+    }
+
+    function renderRows(state) {
+      const { pageItems, totalPages, page: p, totalFiltered } = filterAndPaginate(viewFiltered(rawCustomers), {
+        searchTerm: state.searchTerm, searchFields: ['customerCode', 'companyName', 'contactName'], page: state.page,
+      });
+      state.page = p;
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = pageItems.length
+        ? pageItems.map((c) => {
+          const waHref = waLink(c.contactPhone, `Hi ${c.contactName || ''}, `);
+          return `<tr>
+            <td>${esc(c.customerCode || '—')}${c.inOpenSea ? ` <span class="badge" style="background:#faf1e2;color:#a5690f;">${t('crm.openSea')}</span>` : ''}</td>
+            <td>${esc(c.companyName)}</td>
+            <td>${esc(c.contactName || '')}</td>
+            <td>${esc(ownerName(c.ownerId))}</td>
+            <td><span class="badge">${esc(t('crm.group.' + (c.group || 'potential')))}</span></td>
+            <td><span class="badge">${esc(t('stage.' + (c.dealStage || 'lead')))}</span></td>
+            <td>${esc(timeAgo(c.lastFollowUpAt))}</td>
+            <td>
+              <button class="btn btn-sm edit-btn" data-id="${c.id}">${t('action.edit')}</button>
+              <button class="btn btn-sm btn-danger del-btn" data-id="${c.id}">${t('action.delete')}</button>
+              ${waHref ? `<a class="wa-link" href="${waHref}" target="_blank" rel="noopener">${t('action.whatsapp')}</a>` : ''}
+              <button class="btn btn-sm followup-btn" data-id="${c.id}">${t('crm.logFollowUp')}</button>
+              ${c.inOpenSea ? `<button class="btn btn-sm btn-primary claim-btn" data-id="${c.id}">${t('crm.claim')}</button>` : ''}
+            </td>
+          </tr>`;
+        }).join('')
+        : `<tr class="empty-row"><td colspan="8">${t('common.none')}</td></tr>`;
+      document.getElementById('list-pager').innerHTML = pagerHtml(p, totalPages, totalFiltered);
+
+      tbody.querySelectorAll('.edit-btn').forEach((btn) => btn.addEventListener('click', () => {
+        openCustomerModal(rawCustomers.find((x) => x.id === btn.dataset.id), users, load);
+      }));
+      tbody.querySelectorAll('.del-btn').forEach((btn) => btn.addEventListener('click', async () => {
+        if (!confirm(t('common.confirmDelete'))) return;
+        await api(`customers?id=${btn.dataset.id}`, { method: 'DELETE' });
+        load();
+      }));
+      tbody.querySelectorAll('.followup-btn').forEach((btn) => btn.addEventListener('click', async () => {
+        await api('customers', { method: 'PUT', body: { id: btn.dataset.id, lastFollowUpAt: Date.now() } });
+        load();
+      }));
+      tbody.querySelectorAll('.claim-btn').forEach((btn) => btn.addEventListener('click', async () => {
+        await api('customers', { method: 'PUT', body: { id: btn.dataset.id, ownerId: S.user.id, lastFollowUpAt: Date.now() } });
+        load();
+      }));
+    }
+
+    const toolbarState = bindListToolbar({ searchInputId: 'list-search-input', pagerId: 'list-pager', onChange: renderRows });
+
+    async function load() {
+      const fresh = await api('customers');
+      rawCustomers.length = 0;
+      rawCustomers.push(...fresh);
+      toolbarState.page = 1;
+      renderRows(toolbarState);
+    }
+
+    document.getElementById('crm-view-tabs').querySelectorAll('[data-view]').forEach((btn) => {
+      btn.classList.toggle('btn-primary', btn.dataset.view === S.crmView);
+      btn.addEventListener('click', () => {
+        S.crmView = btn.dataset.view;
+        document.querySelectorAll('#crm-view-tabs [data-view]').forEach((b) => b.classList.toggle('btn-primary', b.dataset.view === S.crmView));
+        toolbarState.page = 1;
+        renderRows(toolbarState);
+      });
+    });
+    document.getElementById('crm-group-filter').addEventListener('change', (e) => {
+      S.crmGroup = e.target.value;
+      toolbarState.page = 1;
+      renderRows(toolbarState);
+    });
+
+    document.getElementById('add-btn').addEventListener('click', () => openCustomerModal(null, users, load));
+
+    renderRows(toolbarState);
+  }
+
+  function openCustomerModal(customer, users, onSaved) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const isEdit = !!customer;
+    const contacts = (customer && customer.additionalContacts) ? customer.additionalContacts.map((c) => ({ ...c })) : [];
+
+    function contactsRowsHtml() {
+      return contacts.map((c, idx) => `
+        <tr>
+          <td><input data-c="name" data-idx="${idx}" placeholder="${esc(t('crm.contactName'))}" value="${esc(c.name || '')}"></td>
+          <td><input data-c="phone" data-idx="${idx}" placeholder="${esc(t('crm.contactPhone'))}" value="${esc(c.phone || '')}"></td>
+          <td><input data-c="email" data-idx="${idx}" placeholder="${esc(t('crm.contactEmail'))}" value="${esc(c.email || '')}"></td>
+          <td><button type="button" class="btn btn-sm btn-danger" data-remove-c="${idx}">✕</button></td>
+        </tr>`).join('');
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <h3>${isEdit ? t('action.edit') : t('action.add')} — ${t('crm.title')}</h3>
+      <form id="customer-form">
+        <div class="field"><label>${t('crm.companyName')}</label><input name="companyName" value="${esc(customer ? customer.companyName : '')}" required></div>
+        <div class="field-row">
+          <div class="field"><label>${t('crm.contactName')}</label><input name="contactName" value="${esc(customer ? customer.contactName || '' : '')}"></div>
+          <div class="field"><label>${t('crm.contactEmail')}</label><input name="contactEmail" type="email" value="${esc(customer ? customer.contactEmail || '' : '')}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>${t('crm.contactPhone')}</label><input name="contactPhone" value="${esc(customer ? customer.contactPhone || '' : '')}"></div>
+          <div class="field"><label>${t('crm.country')}</label><input name="country" value="${esc(customer ? customer.country || '' : '')}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>${t('crm.taxId')}</label><input name="taxId" value="${esc(customer ? customer.taxId || '' : '')}"></div>
+          <div class="field"><label>${t('crm.paymentMethod')}</label>
+            <select name="preferredPaymentMethod">
+              <option value="wire" ${customer && customer.preferredPaymentMethod === 'wire' ? 'selected' : ''}>${t('pay.wire')}</option>
+              <option value="escrow" ${customer && customer.preferredPaymentMethod === 'escrow' ? 'selected' : ''}>${t('pay.escrow')}</option>
+              <option value="card" ${customer && customer.preferredPaymentMethod === 'card' ? 'selected' : ''}>${t('pay.card')}</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>${t('crm.dealStage')}</label>
+            <select name="dealStage">${['lead', 'quoted', 'negotiating', 'won', 'lost'].map((v) => `<option value="${v}" ${customer && customer.dealStage === v ? 'selected' : ''}>${t('stage.' + v)}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label>${t('crm.group')}</label>
+            <select name="group">${CRM_GROUPS.map((g) => `<option value="${g}" ${customer && customer.group === g ? 'selected' : ''}>${t('crm.group.' + g)}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="field"><label>${t('crm.owner')}</label>
+          <select name="ownerId">${users.map((u) => `<option value="${u.id}" ${(customer ? customer.ownerId === u.id : u.id === S.user.id) ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>${t('crm.notes')}</label><textarea name="notes">${esc(customer ? customer.notes || '' : '')}</textarea></div>
+        <label style="font-size:12px;font-weight:600;color:var(--muted);">${t('crm.additionalContacts')}</label>
+        <table class="line-items-table">
+          <thead><tr><th>${t('crm.contactName')}</th><th>${t('crm.contactPhone')}</th><th>${t('crm.contactEmail')}</th><th></th></tr></thead>
+          <tbody id="contacts-body">${contactsRowsHtml()}</tbody>
+        </table>
+        <button type="button" class="btn btn-sm" id="add-contact-btn">${t('crm.addContact')}</button>
+      </form>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="customer-cancel">${t('action.cancel')}</button>
+        <button type="submit" class="btn btn-primary" form="customer-form">${t('action.save')}</button>
+      </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    modal.querySelector('#customer-cancel').addEventListener('click', () => overlay.remove());
+
+    function refreshContactsBody() {
+      modal.querySelector('#contacts-body').innerHTML = contactsRowsHtml();
+      bindContactInputs();
+    }
+    function bindContactInputs() {
+      modal.querySelectorAll('[data-c]').forEach((input) => {
+        input.addEventListener('input', () => {
+          contacts[Number(input.dataset.idx)][input.dataset.c] = input.value;
+        });
+      });
+      modal.querySelectorAll('[data-remove-c]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          contacts.splice(Number(btn.dataset.removeC), 1);
+          refreshContactsBody();
+        });
+      });
+    }
+    bindContactInputs();
+
+    modal.querySelector('#add-contact-btn').addEventListener('click', () => {
+      contacts.push({ name: '', phone: '', email: '' });
+      refreshContactsBody();
+    });
+
+    modal.querySelector('#customer-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const payload = {
+        companyName: form.companyName.value,
+        contactName: form.contactName.value,
+        contactEmail: form.contactEmail.value,
+        contactPhone: form.contactPhone.value,
+        country: form.country.value,
+        taxId: form.taxId.value,
+        preferredPaymentMethod: form.preferredPaymentMethod.value,
+        dealStage: form.dealStage.value,
+        group: form.group.value,
+        ownerId: form.ownerId.value,
+        notes: form.notes.value,
+        additionalContacts: contacts,
+      };
+      if (isEdit) {
+        await api('customers', { method: 'PUT', body: { ...payload, id: customer.id } });
+      } else {
+        await api('customers', { method: 'POST', body: payload });
+      }
+      overlay.remove();
+      toast('Saved');
+      onSaved();
     });
   }
 
@@ -1136,43 +1469,56 @@
     contentEl.innerHTML = `
       <h2 class="page-title">${t('quotes.title')}</h2>
       <div class="toolbar"><div></div><button class="btn btn-primary" id="add-quote-btn">+ ${t('action.add')}</button></div>
+      <div class="list-toolbar">
+        <input type="text" class="list-search" id="list-search-input" placeholder="${esc(t('common.searchPlaceholder'))}">
+        <div class="pager" id="list-pager"></div>
+      </div>
       <div class="card"><table>
         <thead><tr><th>#</th><th>${t('quotes.buyer')}</th><th>${t('quotes.status')}</th><th>${t('quotes.total')}</th><th></th></tr></thead>
         <tbody id="quotes-body"><tr class="empty-row"><td colspan="5">${t('common.loading')}</td></tr></tbody>
       </table></div>
     `;
 
-    const [quotes, customers] = await Promise.all([api('quotes'), api('customers').catch(() => [])]);
+    const [rawQuotes, customers] = await Promise.all([api('quotes'), api('customers').catch(() => [])]);
     const buyerName = (id) => (customers.find((c) => c.id === id) || {}).companyName || '—';
+    const quotes = rawQuotes.map((q) => ({ ...q, _buyerName: buyerName(q.buyerId) }));
 
-    const tbody = document.getElementById('quotes-body');
-    if (!quotes.length) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="5">${t('common.none')}</td></tr>`;
-    } else {
-      tbody.innerHTML = quotes.map((q) => `
-        <tr>
-          <td>${esc(q.quoteNumber)}</td>
-          <td>${esc(buyerName(q.buyerId))}</td>
-          <td><span class="badge status-${esc(q.status)}">${esc(q.status.replace('_', ' '))}</span></td>
-          <td>${fmtMoney(q.total, q.currency)}</td>
-          <td>
-            <button class="btn btn-sm edit-btn" data-id="${q.id}">${t('action.edit')}</button>
-            <a class="btn btn-sm" href="/api/quote-print?id=${q.id}" target="_blank" rel="noopener" onclick="return withAuthHeaderPrint('${q.id}', event)">${t('action.print')}</a>
-            <button class="btn btn-sm btn-danger del-btn" data-id="${q.id}">${t('action.delete')}</button>
-          </td>
-        </tr>`).join('');
+    function renderRows(state) {
+      const { pageItems, totalPages, page: p, totalFiltered } = filterAndPaginate(quotes, {
+        searchTerm: state.searchTerm, searchFields: ['quoteNumber', '_buyerName'], page: state.page,
+      });
+      state.page = p;
+      const tbody = document.getElementById('quotes-body');
+      tbody.innerHTML = pageItems.length
+        ? pageItems.map((q) => `
+          <tr>
+            <td>${esc(q.quoteNumber)}</td>
+            <td>${esc(q._buyerName)}</td>
+            <td><span class="badge status-${esc(q.status)}">${esc(q.status.replace('_', ' '))}</span></td>
+            <td>${fmtMoney(q.total, q.currency)}</td>
+            <td>
+              <button class="btn btn-sm edit-btn" data-id="${q.id}">${t('action.edit')}</button>
+              <a class="btn btn-sm" href="/api/quote-print?id=${q.id}" target="_blank" rel="noopener" onclick="return withAuthHeaderPrint('${q.id}', event)">${t('action.print')}</a>
+              <button class="btn btn-sm btn-danger del-btn" data-id="${q.id}">${t('action.delete')}</button>
+            </td>
+          </tr>`).join('')
+        : `<tr class="empty-row"><td colspan="5">${t('common.none')}</td></tr>`;
+      document.getElementById('list-pager').innerHTML = pagerHtml(p, totalPages, totalFiltered);
+
+      tbody.querySelectorAll('.del-btn').forEach((btn) => btn.addEventListener('click', async () => {
+        if (!confirm(t('common.confirmDelete'))) return;
+        await api(`quotes?id=${btn.dataset.id}`, { method: 'DELETE' });
+        renderQuotes();
+      }));
+
+      tbody.querySelectorAll('.edit-btn').forEach((btn) => btn.addEventListener('click', () => {
+        const quote = quotes.find((q) => q.id === btn.dataset.id);
+        openQuoteModal(quote, customers);
+      }));
     }
 
-    tbody.querySelectorAll('.del-btn').forEach((btn) => btn.addEventListener('click', async () => {
-      if (!confirm(t('common.confirmDelete'))) return;
-      await api(`quotes?id=${btn.dataset.id}`, { method: 'DELETE' });
-      renderQuotes();
-    }));
-
-    tbody.querySelectorAll('.edit-btn').forEach((btn) => btn.addEventListener('click', () => {
-      const quote = quotes.find((q) => q.id === btn.dataset.id);
-      openQuoteModal(quote, customers);
-    }));
+    const toolbarState = bindListToolbar({ searchInputId: 'list-search-input', pagerId: 'list-pager', onChange: renderRows });
+    renderRows(toolbarState);
 
     document.getElementById('add-quote-btn').addEventListener('click', () => openQuoteModal(null, customers));
   }
@@ -2411,6 +2757,10 @@
     contentEl.innerHTML = `
       <h2 class="page-title">${t('products.title')}</h2>
       <div class="toolbar"><div></div><button class="btn btn-primary" id="add-btn">+ ${t('action.add')}</button></div>
+      <div class="list-toolbar">
+        <input type="text" class="list-search" id="list-search-input" placeholder="${esc(t('common.searchPlaceholder'))}">
+        <div class="pager" id="list-pager"></div>
+      </div>
       <div class="card"><table><thead><tr>
         <th>${t('products.sku')}</th><th>${t('products.name')}</th><th>${t('products.chargerType')}</th><th>${t('products.powerKw')}</th><th>${t('products.moq')}</th><th>${t('products.unitPrice')}</th><th></th>
       </tr></thead><tbody id="table-body"><tr class="empty-row"><td colspan="7">${t('common.loading')}</td></tr></tbody></table></div>
@@ -2430,29 +2780,33 @@
       { name: 'unitPriceUSD', label: t('products.unitPrice'), type: 'number', step: '0.01' },
     ];
 
-    async function load() {
-      const list = await api('products');
+    let fullList = [];
+
+    function renderRows(state) {
+      const { pageItems, totalPages, page: p, totalFiltered } = filterAndPaginate(fullList, {
+        searchTerm: state.searchTerm, searchFields: ['sku', 'name'], page: state.page,
+      });
+      state.page = p;
       const tbody = document.getElementById('table-body');
-      if (!list.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="7">${t('common.none')}</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = list.map((p) => {
-        const a = p.attributes || {};
-        return `<tr>
-          <td>${esc(p.sku)}</td><td>${esc(p.name)}</td><td>${esc(a.chargerType || '')}</td><td>${esc(a.powerKw || '')}</td><td>${esc(p.moq ?? '')}</td><td>${fmtMoney(p.unitPriceUSD, 'USD')}</td>
-          <td><button class="btn btn-sm edit-btn" data-id="${p.id}">${t('action.edit')}</button> <button class="btn btn-sm btn-danger del-btn" data-id="${p.id}">${t('action.delete')}</button></td>
-        </tr>`;
-      }).join('');
+      tbody.innerHTML = pageItems.length
+        ? pageItems.map((p) => {
+          const a = p.attributes || {};
+          return `<tr>
+            <td>${esc(p.sku)}</td><td>${esc(p.name)}</td><td>${esc(a.chargerType || '')}</td><td>${esc(a.powerKw || '')}</td><td>${esc(p.moq ?? '')}</td><td>${fmtMoney(p.unitPriceUSD, 'USD')}</td>
+            <td><button class="btn btn-sm edit-btn" data-id="${p.id}">${t('action.edit')}</button> <button class="btn btn-sm btn-danger del-btn" data-id="${p.id}">${t('action.delete')}</button></td>
+          </tr>`;
+        }).join('')
+        : `<tr class="empty-row"><td colspan="7">${t('common.none')}</td></tr>`;
+      document.getElementById('list-pager').innerHTML = pagerHtml(p, totalPages, totalFiltered);
 
       tbody.querySelectorAll('.edit-btn').forEach((btn) => btn.addEventListener('click', () => {
-        const p = list.find((x) => x.id === btn.dataset.id);
+        const p2 = fullList.find((x) => x.id === btn.dataset.id);
         openModal({
           title: t('action.edit'),
           fields,
-          values: flattenProduct(p),
+          values: flattenProduct(p2),
           onSubmit: async (vals, overlay) => {
-            await api('products', { method: 'PUT', body: { ...buildProductPayload(vals), id: p.id } });
+            await api('products', { method: 'PUT', body: { ...buildProductPayload(vals), id: p2.id } });
             overlay.remove();
             toast('Saved');
             load();
@@ -2464,6 +2818,14 @@
         await api(`products?id=${btn.dataset.id}`, { method: 'DELETE' });
         load();
       }));
+    }
+
+    const toolbarState = bindListToolbar({ searchInputId: 'list-search-input', pagerId: 'list-pager', onChange: renderRows });
+
+    async function load() {
+      fullList = await api('products');
+      toolbarState.page = 1;
+      renderRows(toolbarState);
     }
 
     document.getElementById('add-btn').addEventListener('click', () => {

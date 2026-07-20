@@ -78,8 +78,39 @@ database server to manage.
   tracking number, status (booked/in transit/customs/delivered), ETA. No
   Incoterms or customs-doc modeling, per the brief's v1 scope.
 
-Not yet built: full WhatsApp Business API inbox (Phase 4), generalized
-multi-category product catalog, Incoterms/export-logistics detail.
+**Phase 4 — CRM upgrade + list infrastructure**
+
+Prompted by an audit of fumamx.com, the trading ERP the company already
+runs on (see `docs/` note below). Rather than chase full feature parity
+with that system, this phase deliberately narrows to modifying what
+MIDA-APP already has, on the highest-value gaps found:
+
+- **List search + pagination** — every list page (CRM, Products, Quotes,
+  Payments, Tasks, Logistics) now filters/paginates client-side (50/page).
+  The KV storage model still fetches a domain's full list in one call;
+  this caps how many rows get rendered as DOM at once, which is what
+  actually breaks a page at real data volume (fumamx.com has 4,099
+  customer records).
+- **CRM upgrade**: auto-generated Customer Code, an assigned rep
+  (`ownerId`) with a "My Customers" view, a segment/tier tag (`group`:
+  potential → new cooperative → general → key cooperative → sleeping)
+  with filtering, a "Log Follow-up" action, and **Open Sea** — customers
+  with no owner or no logged follow-up in 30 days surface in a claimable
+  pool instead of sitting stale on a rep's list (mirrors the 公海 pattern
+  fumamx.com uses). Also added multiple contacts per account
+  (`additionalContacts`), which supersedes the earlier
+  single-contact-per-account decision below.
+
+Everything else found in the fumamx.com audit — a full Lead→Opportunity→
+Quote→Sample→Cost Estimate→Order pipeline, a parallel domestic-sales
+track, a full procure-to-pay chain (requisition → PO → goods receipt →
+supplier invoice → payment approval), multi-channel (WhatsApp/Facebook/
+Instagram) inbox, marketplace sync — is deliberately deferred. MIDA-APP is
+staying a lighter tool by choice, not by omission.
+
+Not yet built: full WhatsApp Business API inbox, generalized
+multi-category product catalog, Incoterms/export-logistics detail, and the
+deferred fumamx.com-parity items listed above.
 
 ## Decisions locked in for this build
 
@@ -90,8 +121,9 @@ multi-category product catalog, Incoterms/export-logistics detail.
   note field on the quote, not automatic conversion.
 - **Pricing:** single negotiated price per quote line item — no
   quantity-break tier table.
-- **CRM shape:** one contact per buyer account for now (company name,
-  contact, tax ID, country, payment method, deal stage).
+- **CRM shape:** company name, primary contact, tax ID, country, payment
+  method, deal stage — plus, as of Phase 4, an owner, a segment tag, and
+  optional additional contacts beyond the primary one.
 
 ## Still open
 
