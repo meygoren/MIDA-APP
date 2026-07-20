@@ -1,0 +1,9 @@
+{
+  "name": "mida-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wholesale operations dashboard for a China-based EV charger trading company.",
+  "engines": {
+    "node": ">=18"
+  }
+}
