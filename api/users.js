@@ -1,7 +1,8 @@
-// Admin-only user management: role + per-user `pages` grant array (so a
-// non-admin can be given access to specific pages without a new role).
+// Admin-only user management: a user can hold multiple roles at once
+// (`roles` array), plus a per-user `pages` grant array so access to a
+// specific page doesn't require a new role.
 const { kvGet, kvSet } = require('./_kv');
-const { sendJson, requireAuth, logActivity, genId } = require('./_util');
+const { sendJson, requireAuth, logActivity, genId, hasRole } = require('./_util');
 const { hashPin } = require('./_session');
 
 function strip(u) {
@@ -21,18 +22,20 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 200, users.map(strip));
   }
 
-  if (session.role !== 'admin') return sendJson(res, 403, { error: 'Admin only' });
+  if (!hasRole(session, 'admin')) return sendJson(res, 403, { error: 'Admin only' });
 
   if (req.method === 'POST') {
-    const { name, role, pin, pages } = req.body || {};
-    if (!name || !role || !pin) return sendJson(res, 400, { error: 'name, role, pin required' });
+    const { name, roles, pin, pages } = req.body || {};
+    if (!name || !Array.isArray(roles) || !roles.length || !pin) {
+      return sendJson(res, 400, { error: 'name, at least one role, and pin required' });
+    }
     if (users.some((u) => hashPin(pin) === u.pinHash)) {
       return sendJson(res, 400, { error: 'PIN already in use' });
     }
     const user = {
       id: genId('user'),
       name,
-      role,
+      roles,
       pinHash: hashPin(pin),
       pages: pages || [],
       active: true,

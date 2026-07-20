@@ -18,9 +18,11 @@ database server to manage.
   `api/_kv.js`, which whitelists which keys are writable.
 - Auth: PIN login → HMAC-SHA256 signed session token (`api/_session.js`,
   `api/auth.js`). No passwords, no OAuth.
-- Roles + per-user page grants: role (`admin` > `sales` / `procurement` /
-  `finance` / `aftersales`) plus a `pages` array on each user, so e.g. a
-  Sales lead can be granted Reports access without a new role.
+- Roles + per-user page grants: each user holds a `roles` array (any
+  combination of `admin` / `sales` / `procurement` / `finance` /
+  `aftersales`, checked via `hasRole`/`hasAnyRole` in `api/_util.js`), plus
+  a `pages` array so e.g. a Sales lead can be granted Reports access
+  without needing an extra role.
 - UI: off-canvas sidebar (hamburger toggle, top-left) so the content area
   is always full width — same layout on mobile and desktop. Brand palette
   (blue/green/navy) sampled from the MIDA logo; the sidebar brand mark is a
@@ -141,7 +143,8 @@ deferred fumamx.com-parity items listed above.
    Vercel project env vars:
    - `SESSION_SECRET` — long random string.
    - `BUILT_IN_PINS` — bootstrap admin(s), e.g.
-     `1234:Mehmet:admin,5678:Wei:sales`. Used only when the `users` key is
+     `1234:Mehmet:admin,5678:Wei:sales+finance` (a person can hold more
+     than one role, `+`-separated). Used only when the `users` key is
      empty (first run).
    - `KV_REST_API_URL`, `KV_REST_API_TOKEN` — from the Upstash dashboard.
 3. Deploy with `vercel` (or connect the repo in the Vercel dashboard).
