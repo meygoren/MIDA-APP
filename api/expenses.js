@@ -2,9 +2,9 @@
 // no blob storage wired up) + category + approval. Anyone with page access
 // can submit; only admin/finance can approve or reject.
 const { kvGet, kvSet } = require('./_kv');
-const { sendJson, requireAuth, logActivity, genId } = require('./_util');
+const { sendJson, requireAuth, logActivity, genId, hasAnyRole } = require('./_util');
 
-const APPROVER_ROLES = new Set(['admin', 'finance']);
+const APPROVER_ROLES = ['admin', 'finance'];
 
 module.exports = async function handler(req, res) {
   const session = await requireAuth(req, res, { page: 'expenses' });
@@ -50,7 +50,7 @@ module.exports = async function handler(req, res) {
     const idx = list.findIndex((x) => x.id === body.id);
     if (idx === -1) return sendJson(res, 404, { error: 'Not found' });
 
-    if (body.status && ['approved', 'rejected'].includes(body.status) && !APPROVER_ROLES.has(session.role)) {
+    if (body.status && ['approved', 'rejected'].includes(body.status) && !hasAnyRole(session, APPROVER_ROLES)) {
       return sendJson(res, 403, { error: 'Only Finance/Admin can approve or reject expenses' });
     }
 

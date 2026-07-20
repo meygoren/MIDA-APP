@@ -2,7 +2,7 @@
 // notification recipients. Any authenticated user can read; only admins
 // can write.
 const { kvGet, kvSet } = require('./_kv');
-const { sendJson, requireAuth, logActivity } = require('./_util');
+const { sendJson, requireAuth, logActivity, hasRole } = require('./_util');
 
 const DEFAULT_SETTINGS = {
   companyName: 'Wholesale Co.',
@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
-    if (session.role !== 'admin') return sendJson(res, 403, { error: 'Admin only' });
+    if (!hasRole(session, 'admin')) return sendJson(res, 403, { error: 'Admin only' });
     const current = (await kvGet('settings')) || DEFAULT_SETTINGS;
     const updated = { ...current, ...(req.body || {}) };
     await kvSet('settings', updated);

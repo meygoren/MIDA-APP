@@ -4,7 +4,8 @@ const { sendJson, getToken, logActivity } = require('./_util');
 
 // Bootstraps the `users` list from BUILT_IN_PINS on first run, so a fresh
 // deployment has at least one admin without a manual seeding step.
-// Format: "1234:Mehmet:admin,5678:Wei:sales"
+// Format: "1234:Mehmet:admin,5678:Wei:sales+finance" — a user can hold more
+// than one role, separated by "+" within their entry.
 function parseBuiltInPins() {
   const raw = process.env.BUILT_IN_PINS || '';
   return raw
@@ -12,8 +13,9 @@ function parseBuiltInPins() {
     .map((s) => s.trim())
     .filter(Boolean)
     .map((entry) => {
-      const [pin, name, role] = entry.split(':');
-      return { pin, name: name || 'Admin', role: role || 'admin' };
+      const [pin, name, roleSpec] = entry.split(':');
+      const roles = (roleSpec || 'admin').split('+').map((r) => r.trim()).filter(Boolean);
+      return { pin, name: name || 'Admin', roles: roles.length ? roles : ['admin'] };
     });
 }
 
@@ -24,7 +26,7 @@ async function ensureUsers() {
     users = builtins.map((b, i) => ({
       id: `user_bootstrap_${i}`,
       name: b.name,
-      role: b.role,
+      roles: b.roles,
       pinHash: hashPin(b.pin),
       pages: [],
       active: true,
@@ -43,11 +45,11 @@ module.exports = async function handler(req, res) {
     const pinHash = hashPin(pin);
     const user = users.find((u) => u.pinHash === pinHash && u.active !== false);
     if (!user) return sendJson(res, 401, { error: 'Invalid PIN' });
-    const token = sign({ id: user.id, name: user.name, role: user.role, pages: user.pages || [] });
+    const token = sign({ id: user.id, name: user.name, roles: user.roles || [], pages: user.pages || [] });
     await logActivity({ id: user.id, name: user.name }, 'login', 'session', user.id);
     return sendJson(res, 200, {
       token,
-      user: { id: user.id, name: user.name, role: user.role, pages: user.pages || [] },
+      user: { id: user.id, name: user.name, roles: user.roles || [], pages: user.pages || [] },
     });
   }
 

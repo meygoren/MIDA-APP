@@ -11,10 +11,19 @@ function getToken(req) {
   return null;
 }
 
+// A user can hold more than one role at once, so `session.roles` is always
+// an array — these helpers are the one place that knows that.
+function hasRole(session, role) {
+  return (session.roles || []).includes(role);
+}
+function hasAnyRole(session, roles) {
+  return (session.roles || []).some((r) => roles.includes(r));
+}
+
 // Verifies the session token and, if `page` is given, checks the user has
-// admin role or that page in their per-user `pages` grant list. Writes the
-// error response itself and returns null on failure so callers can just
-// `if (!session) return;`.
+// the admin role or that page in their per-user `pages` grant list. Writes
+// the error response itself and returns null on failure so callers can
+// just `if (!session) return;`.
 async function requireAuth(req, res, { page } = {}) {
   const token = getToken(req);
   const session = verify(token);
@@ -22,7 +31,7 @@ async function requireAuth(req, res, { page } = {}) {
     sendJson(res, 401, { error: 'Unauthorized' });
     return null;
   }
-  if (page && session.role !== 'admin') {
+  if (page && !hasRole(session, 'admin')) {
     const pages = session.pages || [];
     if (!pages.includes(page)) {
       sendJson(res, 403, { error: 'Forbidden: no access to this page' });
@@ -51,4 +60,4 @@ async function logActivity(session, action, entity, entityId, details) {
   await kvSet('activity', log.slice(0, 2000));
 }
 
-module.exports = { sendJson, getToken, requireAuth, logActivity, genId };
+module.exports = { sendJson, getToken, requireAuth, logActivity, genId, hasRole, hasAnyRole };

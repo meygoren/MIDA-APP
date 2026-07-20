@@ -3,11 +3,11 @@
 // shipment of Y, with photos, routed to the After-Sales role. Resolution
 // is replacement units, a credit note, or a refund.
 const { kvGet, kvSet } = require('./_kv');
-const { sendJson, requireAuth, logActivity, genId } = require('./_util');
+const { sendJson, requireAuth, logActivity, genId, hasAnyRole } = require('./_util');
 
 const STATUSES = ['open', 'in_review', 'resolved', 'closed'];
 const RESOLUTION_TYPES = ['replacement', 'credit', 'refund'];
-const RESOLVER_ROLES = new Set(['admin', 'aftersales']);
+const RESOLVER_ROLES = ['admin', 'aftersales'];
 
 module.exports = async function handler(req, res) {
   const session = await requireAuth(req, res, { page: 'claims' });
@@ -64,7 +64,7 @@ module.exports = async function handler(req, res) {
     }
 
     const isResolvingAction = (body.status && ['resolved', 'closed'].includes(body.status)) || body.resolutionType;
-    if (isResolvingAction && !RESOLVER_ROLES.has(session.role)) {
+    if (isResolvingAction && !hasAnyRole(session, RESOLVER_ROLES)) {
       return sendJson(res, 403, { error: 'Only After-Sales/Admin can resolve or close a claim' });
     }
 

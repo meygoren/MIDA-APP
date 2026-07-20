@@ -1,11 +1,11 @@
 // Read-only audit trail (who did what, when). Admin only.
 const { kvGet } = require('./_kv');
-const { sendJson, requireAuth } = require('./_util');
+const { sendJson, requireAuth, hasRole } = require('./_util');
 
 module.exports = async function handler(req, res) {
   const session = await requireAuth(req, res, {});
   if (!session) return;
-  if (session.role !== 'admin') return sendJson(res, 403, { error: 'Admin only' });
+  if (!hasRole(session, 'admin')) return sendJson(res, 403, { error: 'Admin only' });
   if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' });
 
   const log = (await kvGet('activity')) || [];

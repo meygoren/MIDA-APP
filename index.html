@@ -134,7 +134,11 @@
   .field input, .field select, .field textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; }
   .field textarea { min-height: 70px; resize: vertical; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .checkbox-group label { font-weight: 400; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--text); font-size: 13px; }
+  /* display:block (not flex) so long labels wrap normally instead of
+     overflowing the modal on narrow/mobile viewports — a bare text node as
+     a flex sibling of the checkbox won't reliably wrap in all browsers. */
+  .checkbox-group label { font-weight: 400; display: block; margin-bottom: 8px; color: var(--text); font-size: 13px; line-height: 1.4; }
+  .checkbox-group label input[type="checkbox"] { margin-right: 7px; vertical-align: middle; position: relative; top: -1px; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 
   .line-items-table { width: 100%; margin-bottom: 8px; }
@@ -704,7 +708,7 @@
 
   function canAccess(pageDef) {
     if (!S.user) return false;
-    if (S.user.role === 'admin') return true;
+    if (userHasRole('admin')) return true;
     if (pageDef.adminOnly) return false;
     if (!pageDef.page) return true;
     return (S.user.pages || []).includes(pageDef.page);
@@ -752,6 +756,13 @@
     if (!digits) return null;
     const q = text ? `?text=${encodeURIComponent(text)}` : '';
     return `https://wa.me/${digits}${q}`;
+  }
+
+  function userHasRole(role) {
+    return (S.user.roles || []).includes(role);
+  }
+  function userHasAnyRole(roles) {
+    return (S.user.roles || []).some((r) => roles.includes(r));
   }
 
   function timeAgo(ms) {
@@ -912,7 +923,7 @@
   function applyStaticText() {
     document.getElementById('login-title').textContent = t('login.title');
     document.getElementById('pin-submit').textContent = t('login.submit');
-    document.getElementById('topbar-user').textContent = S.user ? `${S.user.name} (${S.user.role})` : '';
+    document.getElementById('topbar-user').textContent = S.user ? `${S.user.name} (${(S.user.roles || []).join(', ')})` : '';
     document.getElementById('logout-btn').textContent = t('action.logout');
     langToggle.value = S.lang;
   }
@@ -2049,7 +2060,7 @@
       <div class="card"><table><thead><tr><th>${t('expenses.date')}</th><th>${t('expenses.category')}</th><th>${t('expenses.amount')}</th><th>${t('expenses.submittedBy')}</th><th>${t('expenses.status')}</th><th></th></tr></thead><tbody id="table-body"><tr class="empty-row"><td colspan="6">${t('common.loading')}</td></tr></tbody></table></div>
     `;
 
-    const isApprover = S.user.role === 'admin' || S.user.role === 'finance';
+    const isApprover = userHasAnyRole(['admin', 'finance']);
     let allExpenses = [];
     let customCategories = [];
     let appSettings = { defaultCurrency: 'RMB' };
@@ -2138,7 +2149,7 @@
       openExpenseModal(buildCategoryOptions(), appSettings.defaultCurrency || 'RMB', load);
     });
     document.getElementById('expense-settings-btn').addEventListener('click', () => {
-      openExpenseSettingsModal(customCategories, S.user.role === 'admin', appSettings.defaultCurrency || 'RMB', load);
+      openExpenseSettingsModal(customCategories, userHasRole('admin'), appSettings.defaultCurrency || 'RMB', load);
     });
 
     load();
@@ -2445,7 +2456,7 @@
       </table></div>
     `;
 
-    const isResolver = S.user.role === 'admin' || S.user.role === 'aftersales';
+    const isResolver = userHasAnyRole(['admin', 'aftersales']);
     const [claims, customers, quotes, shipments] = await Promise.all([
       api('claims'),
       api('customers').catch(() => []),
@@ -2585,7 +2596,7 @@
   // ---------------------------------------------------------------------
   async function renderSettings() {
     const settings = await api('settings');
-    const isAdmin = S.user.role === 'admin';
+    const isAdmin = userHasRole('admin');
     contentEl.innerHTML = `
       <h2 class="page-title">${t('settings.title')}</h2>
       <div class="card" style="padding:20px;max-width:480px;">
@@ -2656,7 +2667,7 @@
       tbody.innerHTML = users.map((u) => `
         <tr>
           <td>${esc(u.name)}</td>
-          <td>${esc(u.role)}</td>
+          <td>${(u.roles || []).map(esc).join(', ')}</td>
           <td>${(u.pages || []).map(esc).join(', ')}</td>
           <td>${u.active === false ? '✕' : '✓'}</td>
           <td>
@@ -2672,7 +2683,7 @@
           fields: userFields(true),
           values: { ...u, active: u.active === false ? 'no' : 'yes' },
           onSubmit: async (vals, overlay) => {
-            const body = { id: u.id, name: vals.name, role: vals.role, pages: vals.pages, active: vals.active === 'yes' };
+            const body = { id: u.id, name: vals.name, roles: vals.roles, pages: vals.pages, active: vals.active === 'yes' };
             if (vals.pin) body.pin = vals.pin;
             await api('users', { method: 'PUT', body });
             overlay.remove();
@@ -2691,7 +2702,7 @@
     function userFields(isEdit) {
       return [
         { name: 'name', label: t('users.name'), required: true },
-        { name: 'role', label: t('users.role'), type: 'select', options: ROLE_OPTIONS },
+        { name: 'roles', label: t('users.role'), type: 'checkboxGroup', options: ROLE_OPTIONS },
         { name: 'pin', label: t('users.pin') + (isEdit ? ' (leave blank to keep)' : ''), required: !isEdit },
         { name: 'pages', label: t('users.pages'), type: 'checkboxGroup', options: PAGE_OPTIONS },
         ...(isEdit ? [{ name: 'active', label: t('users.active'), type: 'select', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] }] : []),
