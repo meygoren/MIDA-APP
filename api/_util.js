@@ -20,6 +20,15 @@ function hasAnyRole(session, roles) {
   return (session.roles || []).some((r) => roles.includes(r));
 }
 
+// User records created before multi-role support only have a singular
+// `role` string, not a `roles` array. Fall back to that so every
+// pre-existing account keeps its access instead of silently losing it —
+// apply this to every user record read from KV, not just on login.
+function normalizeUser(u) {
+  if (Array.isArray(u.roles)) return u;
+  return { ...u, roles: u.role ? [u.role] : [] };
+}
+
 // Verifies the session token and, if `page` is given, checks the user has
 // the admin role or that page in their per-user `pages` grant list. Writes
 // the error response itself and returns null on failure so callers can
@@ -60,4 +69,4 @@ async function logActivity(session, action, entity, entityId, details) {
   await kvSet('activity', log.slice(0, 2000));
 }
 
-module.exports = { sendJson, getToken, requireAuth, logActivity, genId, hasRole, hasAnyRole };
+module.exports = { sendJson, getToken, requireAuth, logActivity, genId, hasRole, hasAnyRole, normalizeUser };
