@@ -324,6 +324,13 @@
       'settings.companyName': 'Company Name',
       'settings.defaultCurrency': 'Default Currency',
       'settings.notificationEmails': 'Notification Emails (comma-separated)',
+      'settings.myAccount': 'My Account',
+      'settings.currentPin': 'Current PIN',
+      'settings.newPin': 'New PIN',
+      'settings.confirmPin': 'Confirm New PIN',
+      'settings.changePin': 'Change PIN',
+      'settings.pinMismatch': 'New PIN and confirmation do not match.',
+      'settings.pinChanged': 'PIN changed.',
       'users.title': 'Users & Roles',
       'users.name': 'Name',
       'users.role': 'Role',
@@ -552,6 +559,13 @@
       'settings.companyName': '公司名称',
       'settings.defaultCurrency': '默认货币',
       'settings.notificationEmails': '通知邮箱 (逗号分隔)',
+      'settings.myAccount': '我的账户',
+      'settings.currentPin': '当前 PIN',
+      'settings.newPin': '新 PIN',
+      'settings.confirmPin': '确认新 PIN',
+      'settings.changePin': '修改 PIN',
+      'settings.pinMismatch': '新 PIN 与确认不一致。',
+      'settings.pinChanged': 'PIN 已修改。',
       'users.title': '用户与角色',
       'users.name': '姓名',
       'users.role': '角色',
@@ -2599,7 +2613,17 @@
     const isAdmin = userHasRole('admin');
     contentEl.innerHTML = `
       <h2 class="page-title">${t('settings.title')}</h2>
+      <div class="card" style="padding:20px;max-width:480px;margin-bottom:20px;">
+        <h3 style="margin-top:0;font-size:15px;">${t('settings.myAccount')}</h3>
+        <form id="pin-form">
+          <div class="field"><label>${t('settings.currentPin')}</label><input name="currentPin" type="password" inputmode="numeric" autocomplete="off"></div>
+          <div class="field"><label>${t('settings.newPin')}</label><input name="newPin" type="password" inputmode="numeric" autocomplete="off"></div>
+          <div class="field"><label>${t('settings.confirmPin')}</label><input name="confirmPin" type="password" inputmode="numeric" autocomplete="off"></div>
+          <button type="submit" class="btn btn-primary">${t('settings.changePin')}</button>
+        </form>
+      </div>
       <div class="card" style="padding:20px;max-width:480px;">
+        <h3 style="margin-top:0;font-size:15px;">${t('settings.title')}</h3>
         <form id="settings-form">
           <div class="field"><label>${t('settings.companyName')}</label><input name="companyName" value="${esc(settings.companyName || '')}" ${isAdmin ? '' : 'disabled'}></div>
           <div class="field"><label>${t('settings.defaultCurrency')}</label>
@@ -2610,6 +2634,23 @@
         </form>
       </div>
     `;
+
+    document.getElementById('pin-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      if (form.newPin.value !== form.confirmPin.value) {
+        toast(t('settings.pinMismatch'));
+        return;
+      }
+      try {
+        await api('change-pin', { method: 'POST', body: { currentPin: form.currentPin.value, newPin: form.newPin.value } });
+        toast(t('settings.pinChanged'));
+        form.reset();
+      } catch (err) {
+        toast(err.message);
+      }
+    });
+
     if (isAdmin) {
       document.getElementById('settings-form').addEventListener('submit', async (e) => {
         e.preventDefault();

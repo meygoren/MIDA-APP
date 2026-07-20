@@ -17,7 +17,10 @@ database server to manage.
   `claims`), holding the whole list as JSON. All writes go through
   `api/_kv.js`, which whitelists which keys are writable.
 - Auth: PIN login → HMAC-SHA256 signed session token (`api/_session.js`,
-  `api/auth.js`). No passwords, no OAuth.
+  `api/auth.js`). No passwords, no OAuth. Any logged-in user can change
+  their own PIN from Settings → My Account (`api/change-pin.js`), after
+  verifying their current one; admins can still reset anyone's PIN from
+  the Users & Roles page.
 - Roles + per-user page grants: each user holds a `roles` array (any
   combination of `admin` / `sales` / `procurement` / `finance` /
   `aftersales`, checked via `hasRole`/`hasAnyRole` in `api/_util.js`), plus
