@@ -13,9 +13,9 @@ database server to manage.
 - `api/*.js` — Vercel serverless functions, one file per data domain.
 - Upstash Redis — one key per data domain (`customers`, `products`,
   `quotes`, `payments`, `users`, `settings`, `activity`, `suppliers`,
-  `purchaseOrders`, `tasks`, `expenses`), holding the whole list as JSON.
-  All writes go through `api/_kv.js`, which whitelists which keys are
-  writable.
+  `purchaseOrders`, `tasks`, `expenses`, `expenseCategories`, `shipments`,
+  `claims`), holding the whole list as JSON. All writes go through
+  `api/_kv.js`, which whitelists which keys are writable.
 - Auth: PIN login → HMAC-SHA256 signed session token (`api/_session.js`,
   `api/auth.js`). No passwords, no OAuth.
 - Roles + per-user page grants: role (`admin` > `sales` / `procurement` /
@@ -66,8 +66,20 @@ database server to manage.
 - Reports — revenue by buyer/product, spend by supplier, approved expenses
   by category, open pipeline value, computed on the fly (no stored key)
 
-Not yet built: After-Sales/Claims, lightweight Logistics tracker, full
-WhatsApp Business API inbox.
+**Phase 3**
+- After-Sales / Claims — batch/shipment-level defect claims (not
+  serial-number-level): buyer, linked order and optional shipment, total
+  vs. defective units, description, multiple defect photos, status flow
+  open → in review → resolved → closed. Resolution (replacement / credit
+  note / refund) is restricted to the After-Sales/Admin roles — the shape
+  follows the brief's default since the exact claim details were never
+  confirmed (see "Still open" below).
+- Logistics — lightweight shipment tracker per order: carrier/forwarder,
+  tracking number, status (booked/in transit/customs/delivered), ETA. No
+  Incoterms or customs-doc modeling, per the brief's v1 scope.
+
+Not yet built: full WhatsApp Business API inbox (Phase 4), generalized
+multi-category product catalog, Incoterms/export-logistics detail.
 
 ## Decisions locked in for this build
 
@@ -81,10 +93,12 @@ WhatsApp Business API inbox.
 - **CRM shape:** one contact per buyer account for now (company name,
   contact, tax ID, country, payment method, deal stage).
 
-## Still open (confirm before Phase 3)
+## Still open
 
-- After-Sales claim shape: what a claim looks like, whether photos/videos
-  are required, and whether resolution is replacement/credit/refund.
+- After-Sales claim shape was never explicitly confirmed — built to the
+  brief's stated default (batch/shipment-level, photos, resolution =
+  replacement/credit/refund). Revisit if the real workflow differs (e.g.
+  whether photos should be required, or claims need a video attachment).
 - Whether Alibaba.com / Made-in-China / Global Sources should feed leads
   into the CRM, or all outreach stays direct.
 

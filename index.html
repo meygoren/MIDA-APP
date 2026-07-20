@@ -107,6 +107,13 @@
   .badge.status-in_production { background: #ede9fe; color: #5b21b6; }
   .badge.status-balance_paid, .badge.status-shipped { background: #d1fae5; color: #065f46; }
   .badge.status-closed { background: #e5e7eb; color: #374151; }
+  .badge.status-open { background: #fee2e2; color: #991b1b; }
+  .badge.status-in_review { background: #fef3c7; color: #92400e; }
+  .badge.status-resolved { background: #d1fae5; color: #065f46; }
+  .badge.status-booked { background: #eef2ff; color: #4338ca; }
+  .badge.status-in_transit { background: #dbeafe; color: #1e40af; }
+  .badge.status-customs { background: #fef3c7; color: #92400e; }
+  .badge.status-delivered { background: #d1fae5; color: #065f46; }
 
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
@@ -298,6 +305,8 @@
       'nav.scheduling': 'Scheduling',
       'nav.expenses': 'Expenses',
       'nav.tasks': 'Tasks',
+      'nav.claims': 'After-Sales / Claims',
+      'nav.logistics': 'Logistics',
       'nav.reports': 'Reports',
       'procurement.title': 'Procurement / Supplier Sourcing',
       'procurement.suppliersTab': 'Suppliers',
@@ -363,6 +372,36 @@
       'notif.title': 'Notifications',
       'notif.empty': 'No new notifications',
       'notif.assigned': 'New task assigned to you',
+      'logistics.title': 'Logistics',
+      'logistics.order': 'Linked Order (Quote)',
+      'logistics.carrier': 'Carrier / Forwarder',
+      'logistics.trackingNumber': 'Tracking Number',
+      'logistics.status': 'Status',
+      'logistics.eta': 'ETA',
+      'logistics.status.booked': 'Booked',
+      'logistics.status.in_transit': 'In Transit',
+      'logistics.status.customs': 'Customs',
+      'logistics.status.delivered': 'Delivered',
+      'claims.title': 'After-Sales / Claims',
+      'claims.buyer': 'Buyer',
+      'claims.order': 'Linked Order (Quote)',
+      'claims.shipment': 'Linked Shipment',
+      'claims.totalUnits': 'Total Units in Shipment',
+      'claims.defectiveUnits': 'Defective Units',
+      'claims.description': 'Description',
+      'claims.photos': 'Photos (defect evidence)',
+      'claims.status': 'Status',
+      'claims.resolutionType': 'Resolution',
+      'claims.resolutionNotes': 'Resolution Notes',
+      'claims.resolve': 'Resolve',
+      'claims.none': 'None',
+      'claims.status.open': 'Open',
+      'claims.status.in_review': 'In Review',
+      'claims.status.resolved': 'Resolved',
+      'claims.status.closed': 'Closed',
+      'claims.resolution.replacement': 'Replacement',
+      'claims.resolution.credit': 'Credit Note',
+      'claims.resolution.refund': 'Refund',
       'reports.title': 'Reports',
       'reports.revenueByBuyer': 'Revenue by Buyer',
       'reports.revenueByProduct': 'Revenue by Product',
@@ -473,6 +512,8 @@
       'nav.scheduling': '排期',
       'nav.expenses': '费用',
       'nav.tasks': '任务',
+      'nav.claims': '售后 / 理赔',
+      'nav.logistics': '物流',
       'nav.reports': '报表',
       'procurement.title': '采购 / 供应商寻源',
       'procurement.suppliersTab': '供应商',
@@ -538,6 +579,36 @@
       'notif.title': '通知',
       'notif.empty': '暂无新通知',
       'notif.assigned': '有新任务分配给您',
+      'logistics.title': '物流',
+      'logistics.order': '关联订单 (报价单)',
+      'logistics.carrier': '承运商 / 货代',
+      'logistics.trackingNumber': '追踪单号',
+      'logistics.status': '状态',
+      'logistics.eta': '预计到达时间',
+      'logistics.status.booked': '已订舱',
+      'logistics.status.in_transit': '运输中',
+      'logistics.status.customs': '清关中',
+      'logistics.status.delivered': '已送达',
+      'claims.title': '售后 / 理赔',
+      'claims.buyer': '买家',
+      'claims.order': '关联订单 (报价单)',
+      'claims.shipment': '关联货运',
+      'claims.totalUnits': '该批次总数量',
+      'claims.defectiveUnits': '缺陷数量',
+      'claims.description': '描述',
+      'claims.photos': '照片 (缺陷证据)',
+      'claims.status': '状态',
+      'claims.resolutionType': '处理方式',
+      'claims.resolutionNotes': '处理备注',
+      'claims.resolve': '处理',
+      'claims.none': '无',
+      'claims.status.open': '待处理',
+      'claims.status.in_review': '审核中',
+      'claims.status.resolved': '已处理',
+      'claims.status.closed': '已关闭',
+      'claims.resolution.replacement': '换货',
+      'claims.resolution.credit': '信用凭证',
+      'claims.resolution.refund': '退款',
       'reports.title': '报表',
       'reports.revenueByBuyer': '按买家的收入',
       'reports.revenueByProduct': '按产品的收入',
@@ -576,6 +647,8 @@
     { key: 'scheduling', labelKey: 'nav.scheduling', page: 'scheduling' },
     { key: 'expenses', labelKey: 'nav.expenses', page: 'expenses' },
     { key: 'tasks', labelKey: 'nav.tasks', page: 'tasks' },
+    { key: 'claims', labelKey: 'nav.claims', page: 'claims' },
+    { key: 'logistics', labelKey: 'nav.logistics', page: 'logistics' },
     { key: 'reports', labelKey: 'nav.reports', page: 'reports' },
     { key: 'settings', labelKey: 'nav.settings', page: null },
     { key: 'users', labelKey: 'nav.users', adminOnly: true },
@@ -1977,6 +2050,191 @@
   }
 
   // ---------------------------------------------------------------------
+  // Page: Logistics — lightweight shipment tracker, no Incoterms/customs
+  // doc modeling in v1.
+  // ---------------------------------------------------------------------
+  const SHIPMENT_STATUSES = ['booked', 'in_transit', 'customs', 'delivered'];
+
+  async function renderLogistics() {
+    const quotes = await api('quotes').catch(() => []);
+    const quoteLabel = (id) => (quotes.find((q) => q.id === id) || {}).quoteNumber || '—';
+
+    renderCrudPage({
+      titleKey: 'logistics.title',
+      apiPath: 'shipments',
+      page: 'logistics',
+      columns: [
+        { key: 'quoteId', label: t('logistics.order'), render: (i) => esc(quoteLabel(i.quoteId)) },
+        { key: 'carrier', label: t('logistics.carrier') },
+        { key: 'trackingNumber', label: t('logistics.trackingNumber') },
+        { key: 'status', label: t('logistics.status'), render: (i) => `<span class="badge status-${esc(i.status)}">${esc(t('logistics.status.' + (i.status || 'booked')))}</span>` },
+        { key: 'eta', label: t('logistics.eta') },
+      ],
+      fields: [
+        { name: 'quoteId', label: t('logistics.order'), type: 'select', options: quotes.map((q) => ({ value: q.id, label: q.quoteNumber })) },
+        { name: 'carrier', label: t('logistics.carrier') },
+        { name: 'trackingNumber', label: t('logistics.trackingNumber') },
+        { name: 'status', label: t('logistics.status'), type: 'select', options: SHIPMENT_STATUSES.map((v) => ({ value: v, label: t('logistics.status.' + v) })) },
+        { name: 'eta', label: t('logistics.eta'), type: 'date' },
+        { name: 'notes', label: t('quotes.notes'), type: 'textarea' },
+      ],
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Page: After-Sales / Claims — batch/shipment-level defect claims, not
+  // serial-number-level. Resolution (replacement/credit/refund) is
+  // restricted to the After-Sales / Admin roles.
+  // ---------------------------------------------------------------------
+  const CLAIM_STATUSES = ['open', 'in_review', 'resolved', 'closed'];
+  const CLAIM_RESOLUTIONS = ['replacement', 'credit', 'refund'];
+
+  async function renderClaims() {
+    contentEl.innerHTML = `
+      <h2 class="page-title">${t('claims.title')}</h2>
+      <div class="toolbar"><div></div><button class="btn btn-primary" id="add-claim-btn">+ ${t('action.add')}</button></div>
+      <div class="card"><table>
+        <thead><tr><th>#</th><th>${t('claims.buyer')}</th><th>${t('claims.defectiveUnits')} / ${t('claims.totalUnits')}</th><th>${t('claims.status')}</th><th></th></tr></thead>
+        <tbody id="claims-body"><tr class="empty-row"><td colspan="5">${t('common.loading')}</td></tr></tbody>
+      </table></div>
+    `;
+
+    const isResolver = S.user.role === 'admin' || S.user.role === 'aftersales';
+    const [claims, customers, quotes, shipments] = await Promise.all([
+      api('claims'),
+      api('customers').catch(() => []),
+      api('quotes').catch(() => []),
+      api('shipments').catch(() => []),
+    ]);
+    const buyerName = (id) => (customers.find((c) => c.id === id) || {}).companyName || '—';
+
+    const tbody = document.getElementById('claims-body');
+    if (!claims.length) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="5">${t('common.none')}</td></tr>`;
+    } else {
+      tbody.innerHTML = claims.map((c) => `
+        <tr>
+          <td>${esc(c.claimNumber)}</td>
+          <td>${esc(buyerName(c.buyerId))}</td>
+          <td>${esc(c.defectiveUnits)} / ${esc(c.totalUnits)}</td>
+          <td><span class="badge status-${esc(c.status)}">${esc(t('claims.status.' + c.status))}</span></td>
+          <td>
+            <button class="btn btn-sm view-btn" data-id="${c.id}">${t('action.edit')}</button>
+            <button class="btn btn-sm btn-danger del-btn" data-id="${c.id}">${t('action.delete')}</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    tbody.querySelectorAll('.del-btn').forEach((btn) => btn.addEventListener('click', async () => {
+      if (!confirm(t('common.confirmDelete'))) return;
+      await api(`claims?id=${btn.dataset.id}`, { method: 'DELETE' });
+      renderClaims();
+    }));
+    tbody.querySelectorAll('.view-btn').forEach((btn) => btn.addEventListener('click', () => {
+      const claim = claims.find((x) => x.id === btn.dataset.id);
+      openClaimModal(claim, customers, quotes, shipments, isResolver);
+    }));
+
+    document.getElementById('add-claim-btn').addEventListener('click', () => openClaimModal(null, customers, quotes, shipments, isResolver));
+  }
+
+  function openClaimModal(claim, customers, quotes, shipments, isResolver) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const isEdit = !!claim;
+    const existingPhotos = (claim && claim.photoDataUrls) ? [...claim.photoDataUrls] : [];
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <h3>${isEdit ? t('action.edit') : t('action.add')} — ${t('claims.title')}</h3>
+      <form id="claim-form">
+        <div class="field-row">
+          <div class="field">
+            <label>${t('claims.buyer')}</label>
+            <select name="buyerId">${customers.map((c) => `<option value="${c.id}" ${claim && claim.buyerId === c.id ? 'selected' : ''}>${esc(c.companyName)}</option>`).join('')}</select>
+          </div>
+          <div class="field">
+            <label>${t('claims.order')}</label>
+            <select name="quoteId"><option value="">${t('claims.none')}</option>${quotes.map((q) => `<option value="${q.id}" ${claim && claim.quoteId === q.id ? 'selected' : ''}>${esc(q.quoteNumber)}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="field">
+          <label>${t('claims.shipment')}</label>
+          <select name="shipmentId"><option value="">${t('claims.none')}</option>${shipments.map((s) => `<option value="${s.id}" ${claim && claim.shipmentId === s.id ? 'selected' : ''}>${esc(s.trackingNumber || s.id)}</option>`).join('')}</select>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>${t('claims.totalUnits')}</label><input name="totalUnits" type="number" min="0" value="${claim ? claim.totalUnits : ''}"></div>
+          <div class="field"><label>${t('claims.defectiveUnits')}</label><input name="defectiveUnits" type="number" min="0" value="${claim ? claim.defectiveUnits : ''}"></div>
+        </div>
+        <div class="field"><label>${t('claims.description')}</label><textarea name="description">${esc(claim ? claim.description : '')}</textarea></div>
+        <div class="field"><label>${t('claims.photos')}</label><input type="file" name="photos" accept="image/*" multiple></div>
+        ${existingPhotos.length ? `<div class="field">${existingPhotos.map((p, i) => `<a href="${p}" target="_blank" rel="noopener" class="btn btn-sm" style="margin:2px;">${t('expenses.photo')} ${i + 1}</a>`).join('')}</div>` : ''}
+        ${isEdit ? `
+        <div class="field"><label>${t('claims.status')}</label>
+          <select name="status" ${isResolver ? '' : 'disabled'}>${CLAIM_STATUSES.map((s) => `<option value="${s}" ${claim.status === s ? 'selected' : ''}>${esc(t('claims.status.' + s))}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>${t('claims.resolutionType')}</label>
+          <select name="resolutionType" ${isResolver ? '' : 'disabled'}><option value="">${t('claims.none')}</option>${CLAIM_RESOLUTIONS.map((r) => `<option value="${r}" ${claim.resolutionType === r ? 'selected' : ''}>${esc(t('claims.resolution.' + r))}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>${t('claims.resolutionNotes')}</label><textarea name="resolutionNotes" ${isResolver ? '' : 'disabled'}>${esc(claim.resolutionNotes || '')}</textarea></div>
+        ` : ''}
+      </form>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="claim-cancel">${t('action.cancel')}</button>
+        <button type="submit" class="btn btn-primary" form="claim-form">${t('action.save')}</button>
+      </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    modal.querySelector('#claim-cancel').addEventListener('click', () => overlay.remove());
+
+    modal.querySelector('#claim-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const files = Array.from(form.photos.files || []);
+
+      function finish(newPhotoDataUrls) {
+        const payload = {
+          buyerId: form.buyerId.value,
+          quoteId: form.quoteId.value || null,
+          shipmentId: form.shipmentId.value || null,
+          totalUnits: Number(form.totalUnits.value) || 0,
+          defectiveUnits: Number(form.defectiveUnits.value) || 0,
+          description: form.description.value,
+          photoDataUrls: [...existingPhotos, ...newPhotoDataUrls],
+        };
+        if (isEdit) {
+          payload.id = claim.id;
+          if (isResolver) {
+            payload.status = form.status.value;
+            payload.resolutionType = form.resolutionType.value || null;
+            payload.resolutionNotes = form.resolutionNotes.value;
+          }
+        }
+        const request = isEdit
+          ? api('claims', { method: 'PUT', body: payload })
+          : api('claims', { method: 'POST', body: payload });
+
+        request
+          .then(() => { overlay.remove(); toast('Saved'); renderClaims(); })
+          .catch((err) => toast(err.message));
+      }
+
+      if (files.length) {
+        Promise.all(files.map((file) => new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        }))).then(finish);
+      } else {
+        finish([]);
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------------
   // Page: Settings
   // ---------------------------------------------------------------------
   async function renderSettings() {
@@ -2031,6 +2289,8 @@
     { value: 'scheduling', label: t('nav.scheduling') },
     { value: 'expenses', label: t('nav.expenses') },
     { value: 'tasks', label: t('nav.tasks') },
+    { value: 'claims', label: t('nav.claims') },
+    { value: 'logistics', label: t('nav.logistics') },
     { value: 'reports', label: t('nav.reports') },
   ];
 
@@ -2136,6 +2396,8 @@
       case 'scheduling': return renderScheduling();
       case 'expenses': return renderExpenses();
       case 'tasks': return renderTasks();
+      case 'claims': return renderClaims();
+      case 'logistics': return renderLogistics();
       case 'reports': return renderReports();
       case 'settings': return renderSettings();
       case 'users': return renderUsers();
