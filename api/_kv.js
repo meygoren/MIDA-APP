@@ -20,6 +20,7 @@ const WRITABLE_KEYS = new Set([
   'shipments',
   'tasks',
   'expenses',
+  'expenseCategories',
   'claims',
 ]);
 

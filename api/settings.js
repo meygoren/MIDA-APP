@@ -6,7 +6,7 @@ const { sendJson, requireAuth, logActivity } = require('./_util');
 
 const DEFAULT_SETTINGS = {
   companyName: 'Wholesale Co.',
-  defaultCurrency: 'USD',
+  defaultCurrency: 'RMB',
   notificationEmails: [],
 };
 

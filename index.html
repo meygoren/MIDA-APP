@@ -313,7 +313,15 @@
       'expenses.cat.meals': 'Meals & Entertainment',
       'expenses.cat.shipping': 'Shipping / Samples',
       'expenses.cat.office': 'Office',
-      'expenses.cat.other': 'Other',
+      'expenses.cat.other': 'Other (specify)',
+      'expenses.periodToggle.24h': 'Last 24 Hours',
+      'expenses.periodToggle.7d': 'Last 7 Days',
+      'expenses.periodToggle.30d': 'Last 30 Days',
+      'expenses.periodToggle.1y': 'Last Year',
+      'expenses.totalThisPeriod': 'Total for Selected Period',
+      'expenses.customCategoryName': 'Custom Category Name',
+      'expenses.customCategoryRequired': 'Please enter a category name',
+      'expenses.saveCategory': 'Save this category for future use',
       'tasks.title': 'Tasks',
       'tasks.taskTitle': 'Title',
       'tasks.description': 'Description',
@@ -472,7 +480,15 @@
       'expenses.cat.meals': '餐饮招待',
       'expenses.cat.shipping': '运费 / 样品',
       'expenses.cat.office': '办公',
-      'expenses.cat.other': '其他',
+      'expenses.cat.other': '其他（请注明）',
+      'expenses.periodToggle.24h': '过去24小时',
+      'expenses.periodToggle.7d': '过去7天',
+      'expenses.periodToggle.30d': '过去30天',
+      'expenses.periodToggle.1y': '过去一年',
+      'expenses.totalThisPeriod': '所选期间总额',
+      'expenses.customCategoryName': '自定义类别名称',
+      'expenses.customCategoryRequired': '请输入类别名称',
+      'expenses.saveCategory': '保存此类别以便将来使用',
       'tasks.title': '任务',
       'tasks.taskTitle': '标题',
       'tasks.description': '描述',
@@ -996,7 +1012,7 @@
           </div>
           <div class="field">
             <label>${t('quotes.currency')}</label>
-            <select name="currency">${['USD', 'RMB', 'EUR'].map((c) => `<option value="${c}" ${quote && quote.currency === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+            <select name="currency">${['RMB', 'USD', 'EUR'].map((c) => `<option value="${c}" ${(quote ? quote.currency === c : c === 'RMB') ? 'selected' : ''}>${c}</option>`).join('')}</select>
           </div>
         </div>
         <div class="field"><label>${t('quotes.fxNote')}</label><input name="fxNote" value="${esc(quote ? quote.fxNote : '')}" placeholder="e.g. 1 USD = 7.2 RMB, quoted in USD"></div>
@@ -1112,7 +1128,7 @@
         { name: 'type', label: t('payments.type'), type: 'select', options: [{ value: 'deposit', label: 'Deposit' }, { value: 'balance', label: 'Balance' }, { value: 'other', label: 'Other' }] },
         { name: 'method', label: t('payments.method'), type: 'select', options: [{ value: 'wire', label: t('pay.wire') }, { value: 'escrow', label: t('pay.escrow') }, { value: 'card', label: t('pay.card') }] },
         { name: 'amount', label: t('payments.amount'), type: 'number', step: '0.01' },
-        { name: 'currency', label: t('quotes.currency'), type: 'select', options: [{ value: 'USD', label: 'USD' }, { value: 'RMB', label: 'RMB' }, { value: 'EUR', label: 'EUR' }] },
+        { name: 'currency', label: t('quotes.currency'), type: 'select', default: 'RMB', options: [{ value: 'RMB', label: 'RMB' }, { value: 'USD', label: 'USD' }, { value: 'EUR', label: 'EUR' }] },
         { name: 'reference', label: t('payments.reference') },
         { name: 'status', label: t('payments.status'), type: 'select', options: [{ value: 'pending', label: 'Pending' }, { value: 'received', label: 'Received' }, { value: 'released', label: 'Released' }] },
         { name: 'date', label: t('payments.date'), type: 'date' },
@@ -1306,7 +1322,7 @@
         </div>
         <div class="field">
           <label>${t('quotes.currency')}</label>
-          <select name="currency">${['USD', 'RMB', 'EUR'].map((c) => `<option value="${c}" ${po && po.currency === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+          <select name="currency">${['RMB', 'USD', 'EUR'].map((c) => `<option value="${c}" ${(po ? po.currency === c : c === 'RMB') ? 'selected' : ''}>${c}</option>`).join('')}</select>
         </div>
         ${isEdit ? `<div class="field"><label>${t('procurement.status')}</label><select name="status">${PO_STATUSES.map((s) => `<option value="${s}" ${po.status === s ? 'selected' : ''}>${esc(s.replace('_', ' '))}</option>`).join('')}</select></div>` : ''}
         <label style="font-size:12px;font-weight:600;color:var(--muted);">${t('procurement.items')}</label>
@@ -1460,44 +1476,94 @@
   // ---------------------------------------------------------------------
   // Page: Expenses
   // ---------------------------------------------------------------------
+  const EXPENSE_PERIOD_DAYS = { '24h': 1, '7d': 7, '30d': 30, '1y': 365 };
+
+  function expenseCategoryLabel(cat) {
+    const key = 'expenses.cat.' + cat;
+    return TRANSLATIONS.en[key] ? t(key) : cat;
+  }
+
   async function renderExpenses() {
+    if (!S.expensePeriod) S.expensePeriod = '30d';
+
     contentEl.innerHTML = `
       <h2 class="page-title">${t('expenses.title')}</h2>
+      <div class="toolbar" style="align-items:flex-start;">
+        <div class="stat-card" style="min-width:220px;">
+          <div class="label">${t('expenses.totalThisPeriod')}</div>
+          <div id="period-total-value" style="font-size:18px;font-weight:700;margin-top:6px;">…</div>
+        </div>
+        <div>
+          ${Object.keys(EXPENSE_PERIOD_DAYS).map((p) => `<button class="btn btn-sm period-btn" data-period="${p}">${t('expenses.periodToggle.' + p)}</button>`).join(' ')}
+        </div>
+      </div>
       <div class="toolbar"><div></div><button class="btn btn-primary" id="add-btn">+ ${t('action.add')}</button></div>
       <div class="card"><table><thead><tr><th>${t('expenses.date')}</th><th>${t('expenses.category')}</th><th>${t('expenses.amount')}</th><th>${t('expenses.submittedBy')}</th><th>${t('expenses.status')}</th><th></th></tr></thead><tbody id="table-body"><tr class="empty-row"><td colspan="6">${t('common.loading')}</td></tr></tbody></table></div>
     `;
 
-    const CATEGORY_OPTIONS = ['travel', 'meals', 'shipping', 'office', 'other'].map((v) => ({ value: v, label: t('expenses.cat.' + v) }));
     const isApprover = S.user.role === 'admin' || S.user.role === 'finance';
+    let allExpenses = [];
+    let customCategories = [];
 
-    const fields = [
-      { name: 'category', label: t('expenses.category'), type: 'select', options: CATEGORY_OPTIONS },
-      { name: 'amount', label: t('expenses.amount'), type: 'number', step: '0.01' },
-      { name: 'currency', label: t('quotes.currency'), type: 'select', options: [{ value: 'USD', label: 'USD' }, { value: 'RMB', label: 'RMB' }, { value: 'EUR', label: 'EUR' }] },
-      { name: 'description', label: t('expenses.description') },
-      { name: 'date', label: t('expenses.date'), type: 'date' },
-    ];
+    function buildCategoryOptions() {
+      const builtins = ['travel', 'meals', 'shipping', 'office'].map((v) => ({ value: v, label: t('expenses.cat.' + v) }));
+      const custom = customCategories.map((c) => ({ value: c, label: c }));
+      return [...builtins, ...custom, { value: 'other', label: t('expenses.cat.other') }];
+    }
+
+    function highlightPeriodButtons() {
+      contentEl.querySelectorAll('.period-btn').forEach((btn) => {
+        btn.classList.toggle('btn-primary', btn.dataset.period === S.expensePeriod);
+      });
+    }
+
+    function renderPeriodTotal() {
+      const days = EXPENSE_PERIOD_DAYS[S.expensePeriod] || 30;
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      const totals = {};
+      allExpenses.forEach((e) => {
+        const ts = e.date ? new Date(e.date + 'T00:00:00').getTime() : (e.createdAt || 0);
+        if (!isNaN(ts) && ts >= cutoff) {
+          const cur = e.currency || 'RMB';
+          totals[cur] = (totals[cur] || 0) + (Number(e.amount) || 0);
+        }
+      });
+      const entries = Object.entries(totals);
+      document.getElementById('period-total-value').innerHTML = entries.length
+        ? entries.map(([cur, amt]) => `<div>${fmtMoney(amt, cur)}</div>`).join('')
+        : fmtMoney(0, 'RMB');
+      highlightPeriodButtons();
+    }
+
+    contentEl.querySelectorAll('.period-btn').forEach((btn) => btn.addEventListener('click', () => {
+      S.expensePeriod = btn.dataset.period;
+      renderPeriodTotal();
+    }));
 
     async function load() {
-      const list = await api('expenses');
+      const [list, cats] = await Promise.all([api('expenses'), api('expense-categories').catch(() => [])]);
+      allExpenses = list;
+      customCategories = cats;
+      renderPeriodTotal();
+
       const tbody = document.getElementById('table-body');
       if (!list.length) {
         tbody.innerHTML = `<tr class="empty-row"><td colspan="6">${t('common.none')}</td></tr>`;
-        return;
+      } else {
+        tbody.innerHTML = list.map((e) => `
+          <tr>
+            <td>${esc(e.date || '')}</td>
+            <td>${esc(expenseCategoryLabel(e.category))}</td>
+            <td>${fmtMoney(e.amount, e.currency)}</td>
+            <td>${esc(e.submittedByName || '')}</td>
+            <td><span class="badge">${esc(e.status)}</span></td>
+            <td>
+              ${e.photoDataUrl ? `<a href="${e.photoDataUrl}" target="_blank" rel="noopener" class="btn btn-sm">${t('expenses.photo')}</a>` : ''}
+              ${isApprover && e.status === 'pending' ? `<button class="btn btn-sm" data-approve="${e.id}">${t('expenses.approve')}</button><button class="btn btn-sm btn-danger" data-reject="${e.id}">${t('expenses.reject')}</button>` : ''}
+              <button class="btn btn-sm btn-danger del-btn" data-id="${e.id}">${t('action.delete')}</button>
+            </td>
+          </tr>`).join('');
       }
-      tbody.innerHTML = list.map((e) => `
-        <tr>
-          <td>${esc(e.date || '')}</td>
-          <td>${esc(t('expenses.cat.' + e.category))}</td>
-          <td>${fmtMoney(e.amount, e.currency)}</td>
-          <td>${esc(e.submittedByName || '')}</td>
-          <td><span class="badge">${esc(e.status)}</span></td>
-          <td>
-            ${e.photoDataUrl ? `<a href="${e.photoDataUrl}" target="_blank" rel="noopener" class="btn btn-sm">${t('expenses.photo')}</a>` : ''}
-            ${isApprover && e.status === 'pending' ? `<button class="btn btn-sm" data-approve="${e.id}">${t('expenses.approve')}</button><button class="btn btn-sm btn-danger" data-reject="${e.id}">${t('expenses.reject')}</button>` : ''}
-            <button class="btn btn-sm btn-danger del-btn" data-id="${e.id}">${t('action.delete')}</button>
-          </td>
-        </tr>`).join('');
 
       tbody.querySelectorAll('[data-approve]').forEach((btn) => btn.addEventListener('click', async () => {
         await api('expenses', { method: 'PUT', body: { id: btn.dataset.approve, status: 'approved' } });
@@ -1514,12 +1580,12 @@
       }));
     }
 
-    document.getElementById('add-btn').addEventListener('click', () => openExpenseModal(fields, load));
+    document.getElementById('add-btn').addEventListener('click', () => openExpenseModal(buildCategoryOptions(), load));
 
     load();
   }
 
-  function openExpenseModal(fields, onSaved) {
+  function openExpenseModal(categoryOptions, onSaved) {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     const modal = document.createElement('div');
@@ -1530,16 +1596,45 @@
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
     const form = modal.querySelector('#expense-form');
-    fields.forEach((f) => {
+
+    const categoryWrap = document.createElement('div');
+    categoryWrap.className = 'field';
+    categoryWrap.innerHTML = `<label>${t('expenses.category')}</label><select name="category">${categoryOptions.map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select>`;
+    form.appendChild(categoryWrap);
+
+    const customCatWrap = document.createElement('div');
+    customCatWrap.className = 'field';
+    customCatWrap.style.display = 'none';
+    customCatWrap.innerHTML = `
+      <label>${t('expenses.customCategoryName')}</label>
+      <input type="text" name="customCategory">
+      <label style="display:flex;align-items:center;gap:6px;font-weight:400;margin-top:6px;">
+        <input type="checkbox" name="saveCategory"> ${t('expenses.saveCategory')}
+      </label>
+    `;
+    form.appendChild(customCatWrap);
+
+    categoryWrap.querySelector('select').addEventListener('change', (e) => {
+      customCatWrap.style.display = e.target.value === 'other' ? 'block' : 'none';
+    });
+
+    const simpleFields = [
+      { name: 'amount', label: t('expenses.amount'), type: 'number', step: '0.01' },
+      { name: 'currency', label: t('quotes.currency'), type: 'select', options: [{ value: 'RMB', label: 'RMB' }, { value: 'USD', label: 'USD' }, { value: 'EUR', label: 'EUR' }] },
+      { name: 'description', label: t('expenses.description') },
+      { name: 'date', label: t('expenses.date'), type: 'date' },
+    ];
+    simpleFields.forEach((f) => {
       const wrap = document.createElement('div');
       wrap.className = 'field';
       if (f.type === 'select') {
-        wrap.innerHTML = `<label>${esc(f.label)}</label><select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select>`;
+        wrap.innerHTML = `<label>${esc(f.label)}</label><select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}" ${f.name === 'currency' && o.value === 'RMB' ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
       } else {
         wrap.innerHTML = `<label>${esc(f.label)}</label><input type="${f.type || 'text'}" name="${f.name}" ${f.step ? `step="${f.step}"` : ''}>`;
       }
       form.appendChild(wrap);
     });
+
     const photoWrap = document.createElement('div');
     photoWrap.className = 'field';
     photoWrap.innerHTML = `<label>${t('expenses.photo')}</label><input type="file" name="photo" accept="image/*">`;
@@ -1553,13 +1648,34 @@
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const out = {};
-      fields.forEach((f) => { out[f.name] = f.type === 'number' ? Number(form[f.name].value) : form[f.name].value; });
+
+      let category = form.category.value;
+      const saveCategory = !!(form.saveCategory && form.saveCategory.checked);
+      if (category === 'other') {
+        const custom = (form.customCategory.value || '').trim();
+        if (!custom) { toast(t('expenses.customCategoryRequired')); return; }
+        category = custom;
+      }
+
+      const out = {
+        category,
+        amount: Number(form.amount.value) || 0,
+        currency: form.currency.value,
+        description: form.description.value,
+        date: form.date.value,
+      };
       const file = form.querySelector('[name="photo"]').files[0];
 
       function finish(photoDataUrl) {
         api('expenses', { method: 'POST', body: { ...out, photoDataUrl } })
-          .then(() => { overlay.remove(); toast('Saved'); onSaved(); })
+          .then(async () => {
+            if (saveCategory && category) {
+              await api('expense-categories', { method: 'POST', body: { name: category } }).catch(() => {});
+            }
+            overlay.remove();
+            toast('Saved');
+            onSaved();
+          })
           .catch((err) => toast(err.message));
       }
 
@@ -1639,7 +1755,7 @@
         <form id="settings-form">
           <div class="field"><label>${t('settings.companyName')}</label><input name="companyName" value="${esc(settings.companyName || '')}" ${isAdmin ? '' : 'disabled'}></div>
           <div class="field"><label>${t('settings.defaultCurrency')}</label>
-            <select name="defaultCurrency" ${isAdmin ? '' : 'disabled'}>${['USD', 'RMB', 'EUR'].map((c) => `<option value="${c}" ${settings.defaultCurrency === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+            <select name="defaultCurrency" ${isAdmin ? '' : 'disabled'}>${['RMB', 'USD', 'EUR'].map((c) => `<option value="${c}" ${settings.defaultCurrency === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
           </div>
           <div class="field"><label>${t('settings.notificationEmails')}</label><input name="notificationEmails" value="${esc((settings.notificationEmails || []).join(', '))}" ${isAdmin ? '' : 'disabled'}></div>
           ${isAdmin ? `<button type="submit" class="btn btn-primary">${t('action.save')}</button>` : `<div class="muted">${t('action.edit')}: admin only</div>`}

@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
       poNumber: `PO-${Date.now().toString().slice(-8)}`,
       supplierId: body.supplierId || null,
       linkedQuoteId: body.linkedQuoteId || null,
-      currency: body.currency || 'USD',
+      currency: body.currency || 'RMB',
       items,
       totalCost,
       leadTimeDays: Number(body.leadTimeDays) || null,
