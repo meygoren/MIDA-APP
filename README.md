@@ -12,17 +12,23 @@ database server to manage.
 - `index.html` — single-file vanilla JS SPA (login, nav shell, all pages).
 - `api/*.js` — Vercel serverless functions, one file per data domain.
 - Upstash Redis — one key per data domain (`customers`, `products`,
-  `quotes`, `payments`, `users`, `settings`, `activity`), holding the whole
-  list as JSON. All writes go through `api/_kv.js`, which whitelists which
-  keys are writable.
+  `quotes`, `payments`, `users`, `settings`, `activity`, `suppliers`,
+  `purchaseOrders`, `tasks`, `expenses`), holding the whole list as JSON.
+  All writes go through `api/_kv.js`, which whitelists which keys are
+  writable.
 - Auth: PIN login → HMAC-SHA256 signed session token (`api/_session.js`,
   `api/auth.js`). No passwords, no OAuth.
 - Roles + per-user page grants: role (`admin` > `sales` / `procurement` /
   `finance` / `aftersales`) plus a `pages` array on each user, so e.g. a
   Sales lead can be granted Reports access without a new role.
+- UI: off-canvas sidebar (hamburger toggle, top-left) so the content area
+  is always full width — same layout on mobile and desktop. Brand palette
+  (blue/green/navy) sampled from the MIDA logo; the sidebar brand mark is a
+  styled placeholder pending the real logo asset file.
 
-## Modules in this build (Phase 1)
+## Modules in this build
 
+**Phase 1**
 - Auth / roles
 - CRM — buyer accounts (single contact per account for now)
 - Product catalog — AC/DC charger specs live under a free-form
@@ -40,10 +46,21 @@ database server to manage.
 - Users & Roles, Activity Log (admin only)
 - EN/中文 UI toggle, persisted per-browser
 
-Not yet built (see "Suggested build order" from the original brief):
-Procurement/Supplier Sourcing, Scheduling calendar, Expenses, Tasks,
-Reports, After-Sales/Claims, lightweight Logistics tracker, full WhatsApp
-Business API inbox.
+**Phase 2**
+- Procurement / Supplier Sourcing — factory/supplier directory, purchase
+  orders with a line-item cost table, RFQ→quoted→ordered→...→received
+  status flow (RFQ comparison in v1 = create one draft PO per candidate
+  supplier, mark the winner "ordered")
+- Scheduling — hand-rolled month calendar surfacing quote and PO ready-by
+  dates
+- Expenses — photo capture (stored as a data URL, no blob storage wired up
+  yet) + category + Finance/Admin approval
+- Tasks — generic assignable task list with due dates
+- Reports — revenue by buyer/product, spend by supplier, approved expenses
+  by category, open pipeline value, computed on the fly (no stored key)
+
+Not yet built: After-Sales/Claims, lightweight Logistics tracker, full
+WhatsApp Business API inbox.
 
 ## Decisions locked in for this build
 
