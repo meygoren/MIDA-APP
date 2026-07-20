@@ -11,10 +11,16 @@
     --border: #e2e5ea;
     --text: #1a1d23;
     --muted: #6b7280;
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
+    /* MIDA brand palette, sampled from the company logo (blue swirl + lime-green swirl) */
+    --brand-blue: #1668b8;
+    --brand-blue-dark: #0d4c8c;
+    --brand-navy: #0a2e4d;
+    --brand-green: #8dc63f;
+    --brand-green-dark: #6fa82e;
+    --primary: var(--brand-blue);
+    --primary-dark: var(--brand-blue-dark);
     --danger: #dc2626;
-    --success: #16a34a;
+    --success: var(--brand-green-dark);
     --radius: 8px;
   }
   * { box-sizing: border-box; }
@@ -25,26 +31,44 @@
   /* Login */
   #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
   .login-box { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; width: 320px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-  .login-box h1 { font-size: 20px; margin: 0 0 24px; }
+  .login-box .brand-mark { justify-content: center; margin-bottom: 20px; }
+  .login-box h1 { font-size: 18px; margin: 0 0 24px; color: var(--muted); font-weight: 600; }
   .login-box input { width: 100%; padding: 12px; font-size: 20px; text-align: center; letter-spacing: 4px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; }
   .login-box button { width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; }
   .login-box button:hover { background: var(--primary-dark); }
   .login-error { color: var(--danger); font-size: 13px; margin-top: 8px; min-height: 18px; }
 
-  /* Shell */
+  /* Brand mark (styled placeholder until the real logo asset is embedded) */
+  .brand-mark { display: flex; align-items: center; gap: 10px; }
+  .brand-mark .swirl { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; background: conic-gradient(from 200deg, var(--brand-blue) 0deg, var(--brand-blue) 150deg, var(--brand-green) 160deg, var(--brand-green) 340deg, var(--brand-blue) 360deg); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15); }
+  .brand-mark .wordmark { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; }
+  .brand-mark .wordmark .m, .brand-mark .wordmark .d, .brand-mark .wordmark .a { color: var(--brand-blue); }
+  .brand-mark .wordmark .i { color: var(--brand-green); }
+  #sidebar .brand-mark .wordmark .m, #sidebar .brand-mark .wordmark .d, #sidebar .brand-mark .wordmark .a { color: #fff; }
+  #sidebar .brand-mark .wordmark .i { color: var(--brand-green); }
+
+  /* Shell: off-canvas sidebar so content is always full width, mobile-friendly */
   #app-shell { display: none; min-height: 100vh; }
-  #app-shell.active { display: flex; }
-  #sidebar { width: 220px; background: #14181f; color: #cbd5e1; flex-shrink: 0; display: flex; flex-direction: column; }
-  #sidebar .brand { padding: 20px 16px; font-weight: 700; color: #fff; font-size: 16px; border-bottom: 1px solid #262c36; }
+  #app-shell.active { display: block; }
+  #sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 120; width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); font-size: 18px; line-height: 1; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  #sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  #sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+  #sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 240px; background: var(--brand-navy); color: #cbd5e1; flex-shrink: 0; display: flex; flex-direction: column; z-index: 110; transform: translateX(-100%); transition: transform 0.2s ease; }
+  #sidebar.open { transform: translateX(0); }
+  #sidebar .brand { padding: 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
   #sidebar nav { flex: 1; padding: 12px 0; overflow-y: auto; }
   #sidebar nav a { display: block; padding: 10px 20px; color: #cbd5e1; text-decoration: none; font-size: 14px; cursor: pointer; }
-  #sidebar nav a:hover { background: #1e2530; color: #fff; }
-  #sidebar nav a.active { background: var(--primary); color: #fff; }
-  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-  #topbar { height: 56px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; padding: 0 24px; gap: 16px; }
+  #sidebar nav a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  #sidebar nav a.active { background: var(--brand-blue); color: #fff; }
+  #main { display: flex; flex-direction: column; min-width: 0; width: 100%; }
+  #topbar { height: 56px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; padding: 0 24px 0 64px; gap: 16px; }
   #topbar .user-name { font-size: 14px; color: var(--muted); }
   #topbar button, #topbar select { padding: 6px 10px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 13px; }
-  #content { flex: 1; padding: 24px; overflow-y: auto; }
+  #content { padding: 24px; }
+  @media (max-width: 640px) {
+    #topbar { padding-left: 60px; flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; }
+    #content { padding: 16px; }
+  }
 
   h2.page-title { margin: 0 0 20px; font-size: 20px; }
   .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
@@ -54,7 +78,7 @@
   .btn-danger { color: var(--danger); }
   .btn-sm { padding: 4px 8px; font-size: 12px; }
 
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; }
   th, td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { background: #fafbfc; color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; }
@@ -93,12 +117,25 @@
   .wa-link:hover { text-decoration: underline; }
   .muted { color: var(--muted); }
   .toast { position: fixed; bottom: 20px; right: 20px; background: #1a1d23; color: #fff; padding: 12px 18px; border-radius: 6px; font-size: 13px; z-index: 200; }
+
+  /* Calendar (Scheduling) */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-header { margin-bottom: 4px; font-size: 11px; text-transform: uppercase; color: var(--muted); text-align: center; }
+  .cal-cell { min-height: 72px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 4px; font-size: 11px; }
+  .cal-cell.empty { background: transparent; border: none; }
+  .cal-day { font-weight: 600; margin-bottom: 4px; }
+  .cal-chip { background: #eef2ff; color: #4338ca; border-radius: 4px; padding: 2px 4px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-chip-po { background: #fef3c7; color: #92400e; }
+  @media (max-width: 640px) {
+    .cal-cell { min-height: 48px; font-size: 10px; }
+  }
 </style>
 </head>
 <body>
 
 <div id="login-screen">
   <div class="login-box">
+    <div class="brand-mark"><span class="swirl"></span><span class="wordmark"><span class="m">M</span><span class="i">I</span><span class="d">D</span><span class="a">A</span></span></div>
     <h1 id="login-title">Wholesale Ops Login</h1>
     <input type="password" id="pin-input" inputmode="numeric" maxlength="8" placeholder="PIN">
     <button id="pin-submit">Sign in</button>
@@ -107,8 +144,12 @@
 </div>
 
 <div id="app-shell">
+  <button id="sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+  <div id="sidebar-overlay"></div>
   <div id="sidebar">
-    <div class="brand">Wholesale Ops</div>
+    <div class="brand">
+      <div class="brand-mark"><span class="swirl"></span><span class="wordmark"><span class="m">M</span><span class="i">I</span><span class="d">D</span><span class="a">A</span></span></div>
+    </div>
     <nav id="nav-links"></nav>
   </div>
   <div id="main">
@@ -227,6 +268,69 @@
       'users.pages': 'Page Access',
       'users.active': 'Active',
       'activity.title': 'Activity Log',
+      'nav.procurement': 'Procurement',
+      'nav.scheduling': 'Scheduling',
+      'nav.expenses': 'Expenses',
+      'nav.tasks': 'Tasks',
+      'nav.reports': 'Reports',
+      'procurement.title': 'Procurement / Supplier Sourcing',
+      'procurement.suppliersTab': 'Suppliers',
+      'procurement.posTab': 'Purchase Orders / RFQs',
+      'procurement.name': 'Supplier / Factory Name',
+      'procurement.contactName': 'Contact Name',
+      'procurement.contactPhone': 'Contact Phone (WhatsApp)',
+      'procurement.country': 'Country',
+      'procurement.leadTimeDays': 'Typical Lead Time (days)',
+      'procurement.productsSupplied': 'Products Supplied',
+      'procurement.supplier': 'Supplier',
+      'procurement.linkedQuote': 'Linked Buyer Quote',
+      'procurement.status': 'Status',
+      'procurement.leadTime': 'Lead Time (days)',
+      'procurement.readyBy': 'Ready-by Date',
+      'procurement.items': 'Items',
+      'procurement.description': 'Description',
+      'procurement.qty': 'Qty',
+      'procurement.unitCost': 'Unit Cost',
+      'procurement.totalCost': 'Total Cost',
+      'procurement.addLine': '+ Add line',
+      'procurement.none': 'None',
+      'scheduling.title': 'Scheduling',
+      'scheduling.today': 'Today',
+      'scheduling.prev': '‹',
+      'scheduling.next': '›',
+      'scheduling.noItems': 'Nothing scheduled this month.',
+      'expenses.title': 'Expenses',
+      'expenses.category': 'Category',
+      'expenses.amount': 'Amount',
+      'expenses.description': 'Description',
+      'expenses.date': 'Date',
+      'expenses.photo': 'Photo',
+      'expenses.status': 'Status',
+      'expenses.submittedBy': 'Submitted By',
+      'expenses.approve': 'Approve',
+      'expenses.reject': 'Reject',
+      'expenses.cat.travel': 'Travel',
+      'expenses.cat.meals': 'Meals & Entertainment',
+      'expenses.cat.shipping': 'Shipping / Samples',
+      'expenses.cat.office': 'Office',
+      'expenses.cat.other': 'Other',
+      'tasks.title': 'Tasks',
+      'tasks.taskTitle': 'Title',
+      'tasks.description': 'Description',
+      'tasks.assignedTo': 'Assigned To',
+      'tasks.dueDate': 'Due Date',
+      'tasks.status': 'Status',
+      'tasks.status.open': 'Open',
+      'tasks.status.done': 'Done',
+      'reports.title': 'Reports',
+      'reports.revenueByBuyer': 'Revenue by Buyer',
+      'reports.revenueByProduct': 'Revenue by Product',
+      'reports.spendBySupplier': 'Spend by Supplier',
+      'reports.expensesByCategory': 'Approved Expenses by Category',
+      'reports.pendingExpenses': 'Pending Expenses (awaiting approval)',
+      'reports.openPipelineValue': 'Open Quotes Pipeline Value',
+      'reports.openQuoteCount': 'Open Quote Count',
+      'reports.noData': 'No data yet.',
     },
     zh: {
       'login.title': '批发运营系统登录',
@@ -323,6 +427,69 @@
       'users.pages': '页面权限',
       'users.active': '启用',
       'activity.title': '操作日志',
+      'nav.procurement': '采购',
+      'nav.scheduling': '排期',
+      'nav.expenses': '费用',
+      'nav.tasks': '任务',
+      'nav.reports': '报表',
+      'procurement.title': '采购 / 供应商寻源',
+      'procurement.suppliersTab': '供应商',
+      'procurement.posTab': '采购订单 / 询价',
+      'procurement.name': '供应商 / 工厂名称',
+      'procurement.contactName': '联系人',
+      'procurement.contactPhone': '联系电话 (WhatsApp)',
+      'procurement.country': '国家',
+      'procurement.leadTimeDays': '典型交货周期 (天)',
+      'procurement.productsSupplied': '供应产品',
+      'procurement.supplier': '供应商',
+      'procurement.linkedQuote': '关联买家报价',
+      'procurement.status': '状态',
+      'procurement.leadTime': '交货周期 (天)',
+      'procurement.readyBy': '交货日期',
+      'procurement.items': '明细行',
+      'procurement.description': '描述',
+      'procurement.qty': '数量',
+      'procurement.unitCost': '单位成本',
+      'procurement.totalCost': '总成本',
+      'procurement.addLine': '+ 添加行',
+      'procurement.none': '无',
+      'scheduling.title': '排期',
+      'scheduling.today': '今天',
+      'scheduling.prev': '‹',
+      'scheduling.next': '›',
+      'scheduling.noItems': '本月暂无排期。',
+      'expenses.title': '费用',
+      'expenses.category': '类别',
+      'expenses.amount': '金额',
+      'expenses.description': '描述',
+      'expenses.date': '日期',
+      'expenses.photo': '照片',
+      'expenses.status': '状态',
+      'expenses.submittedBy': '提交人',
+      'expenses.approve': '批准',
+      'expenses.reject': '拒绝',
+      'expenses.cat.travel': '差旅',
+      'expenses.cat.meals': '餐饮招待',
+      'expenses.cat.shipping': '运费 / 样品',
+      'expenses.cat.office': '办公',
+      'expenses.cat.other': '其他',
+      'tasks.title': '任务',
+      'tasks.taskTitle': '标题',
+      'tasks.description': '描述',
+      'tasks.assignedTo': '负责人',
+      'tasks.dueDate': '截止日期',
+      'tasks.status': '状态',
+      'tasks.status.open': '进行中',
+      'tasks.status.done': '已完成',
+      'reports.title': '报表',
+      'reports.revenueByBuyer': '按买家的收入',
+      'reports.revenueByProduct': '按产品的收入',
+      'reports.spendBySupplier': '按供应商的支出',
+      'reports.expensesByCategory': '已批准费用（按类别）',
+      'reports.pendingExpenses': '待批准费用',
+      'reports.openPipelineValue': '进行中报价总额',
+      'reports.openQuoteCount': '进行中报价数量',
+      'reports.noData': '暂无数据。',
     },
   };
 
@@ -348,6 +515,11 @@
     { key: 'products', labelKey: 'nav.products', page: 'products' },
     { key: 'quotes', labelKey: 'nav.quotes', page: 'quotes' },
     { key: 'payments', labelKey: 'nav.payments', page: 'payments' },
+    { key: 'procurement', labelKey: 'nav.procurement', page: 'procurement' },
+    { key: 'scheduling', labelKey: 'nav.scheduling', page: 'scheduling' },
+    { key: 'expenses', labelKey: 'nav.expenses', page: 'expenses' },
+    { key: 'tasks', labelKey: 'nav.tasks', page: 'tasks' },
+    { key: 'reports', labelKey: 'nav.reports', page: 'reports' },
     { key: 'settings', labelKey: 'nav.settings', page: null },
     { key: 'users', labelKey: 'nav.users', adminOnly: true },
     { key: 'activity', labelKey: 'nav.activity', adminOnly: true },
@@ -449,6 +621,18 @@
   const navLinks = document.getElementById('nav-links');
   const contentEl = document.getElementById('content');
   const langToggle = document.getElementById('lang-toggle');
+  const sidebarEl = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+
+  function setSidebar(open) {
+    S.sidebarOpen = open;
+    sidebarEl.classList.toggle('open', open);
+    sidebarOverlay.classList.toggle('open', open);
+    localStorage.setItem('wo_sidebar_open', open ? 'true' : 'false');
+  }
+  sidebarToggle.addEventListener('click', () => setSidebar(!S.sidebarOpen));
+  sidebarOverlay.addEventListener('click', () => setSidebar(false));
 
   function renderNav() {
     navLinks.innerHTML = '';
@@ -481,6 +665,7 @@
     S.page = key;
     renderNav();
     renderPage();
+    setSidebar(false);
   }
 
   function showApp() {
@@ -489,6 +674,7 @@
     applyStaticText();
     renderNav();
     renderPage();
+    setSidebar(false);
   }
 
   // ---------------------------------------------------------------------
@@ -936,6 +1122,512 @@
   }
 
   // ---------------------------------------------------------------------
+  // Page: Procurement / Supplier Sourcing
+  // ---------------------------------------------------------------------
+  const PO_STATUSES = ['rfq', 'quoted', 'ordered', 'in_production', 'ready', 'shipped', 'received', 'cancelled'];
+
+  function procurementTabsHtml(active) {
+    return `<div class="toolbar" style="margin-bottom:12px;">
+      <div>
+        <button class="btn btn-sm ${active === 'suppliers' ? 'btn-primary' : ''}" id="tab-suppliers">${t('procurement.suppliersTab')}</button>
+        <button class="btn btn-sm ${active === 'pos' ? 'btn-primary' : ''}" id="tab-pos">${t('procurement.posTab')}</button>
+      </div>
+    </div>`;
+  }
+
+  function bindProcurementTabs() {
+    document.getElementById('tab-suppliers').addEventListener('click', () => renderSuppliersTab());
+    document.getElementById('tab-pos').addEventListener('click', () => renderPurchaseOrdersTab());
+  }
+
+  function renderProcurement() {
+    return (S.procurementTab === 'pos') ? renderPurchaseOrdersTab() : renderSuppliersTab();
+  }
+
+  async function renderSuppliersTab() {
+    S.procurementTab = 'suppliers';
+    contentEl.innerHTML = `<h2 class="page-title">${t('procurement.title')}</h2>${procurementTabsHtml('suppliers')}
+      <div class="toolbar"><div></div><button class="btn btn-primary" id="add-btn">+ ${t('action.add')}</button></div>
+      <div class="card"><table><thead><tr><th>${t('procurement.name')}</th><th>${t('procurement.contactName')}</th><th>${t('procurement.country')}</th><th>${t('procurement.leadTimeDays')}</th><th></th></tr></thead><tbody id="table-body"><tr class="empty-row"><td colspan="5">${t('common.loading')}</td></tr></tbody></table></div>
+    `;
+    bindProcurementTabs();
+
+    const fields = [
+      { name: 'name', label: t('procurement.name'), required: true },
+      { name: 'contactName', label: t('procurement.contactName') },
+      { name: 'contactPhone', label: t('procurement.contactPhone') },
+      { name: 'country', label: t('procurement.country') },
+      { name: 'leadTimeDays', label: t('procurement.leadTimeDays'), type: 'number' },
+      { name: 'productsSupplied', label: t('procurement.productsSupplied'), type: 'textarea' },
+    ];
+
+    async function load() {
+      const list = await api('suppliers');
+      const tbody = document.getElementById('table-body');
+      if (!tbody) return;
+      if (!list.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="5">${t('common.none')}</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map((s) => {
+        const link = waLink(s.contactPhone, `Hi ${s.contactName || ''}, `);
+        return `<tr>
+          <td>${esc(s.name)}</td><td>${esc(s.contactName || '')}</td><td>${esc(s.country || '')}</td><td>${esc(s.leadTimeDays ?? '')}</td>
+          <td>
+            <button class="btn btn-sm edit-btn" data-id="${s.id}">${t('action.edit')}</button>
+            <button class="btn btn-sm btn-danger del-btn" data-id="${s.id}">${t('action.delete')}</button>
+            ${link ? `<a class="wa-link" href="${link}" target="_blank" rel="noopener">${t('action.whatsapp')}</a>` : ''}
+          </td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('.edit-btn').forEach((btn) => btn.addEventListener('click', () => {
+        const s = list.find((x) => x.id === btn.dataset.id);
+        openModal({
+          title: t('action.edit'),
+          fields,
+          values: s,
+          onSubmit: async (vals, overlay) => {
+            await api('suppliers', { method: 'PUT', body: { ...vals, id: s.id } });
+            overlay.remove();
+            toast('Saved');
+            load();
+          },
+        });
+      }));
+      tbody.querySelectorAll('.del-btn').forEach((btn) => btn.addEventListener('click', async () => {
+        if (!confirm(t('common.confirmDelete'))) return;
+        await api(`suppliers?id=${btn.dataset.id}`, { method: 'DELETE' });
+        load();
+      }));
+    }
+
+    document.getElementById('add-btn').addEventListener('click', () => {
+      openModal({
+        title: t('action.add'),
+        fields,
+        values: {},
+        onSubmit: async (vals, overlay) => {
+          await api('suppliers', { method: 'POST', body: vals });
+          overlay.remove();
+          toast('Saved');
+          load();
+        },
+      });
+    });
+
+    load();
+  }
+
+  async function renderPurchaseOrdersTab() {
+    S.procurementTab = 'pos';
+    contentEl.innerHTML = `<h2 class="page-title">${t('procurement.title')}</h2>${procurementTabsHtml('pos')}
+      <div class="toolbar"><div></div><button class="btn btn-primary" id="add-po-btn">+ ${t('action.add')}</button></div>
+      <div class="card"><table>
+        <thead><tr><th>#</th><th>${t('procurement.supplier')}</th><th>${t('procurement.status')}</th><th>${t('procurement.totalCost')}</th><th>${t('procurement.readyBy')}</th><th></th></tr></thead>
+        <tbody id="po-body"><tr class="empty-row"><td colspan="6">${t('common.loading')}</td></tr></tbody>
+      </table></div>
+    `;
+    bindProcurementTabs();
+
+    const [pos, suppliers, quotes] = await Promise.all([
+      api('purchase-orders'),
+      api('suppliers').catch(() => []),
+      api('quotes').catch(() => []),
+    ]);
+    const supplierName = (id) => (suppliers.find((s) => s.id === id) || {}).name || '—';
+
+    const tbody = document.getElementById('po-body');
+    if (!pos.length) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="6">${t('common.none')}</td></tr>`;
+    } else {
+      tbody.innerHTML = pos.map((po) => `
+        <tr>
+          <td>${esc(po.poNumber)}</td>
+          <td>${esc(supplierName(po.supplierId))}</td>
+          <td><span class="badge status-${esc(po.status)}">${esc(po.status.replace('_', ' '))}</span></td>
+          <td>${fmtMoney(po.totalCost, po.currency)}</td>
+          <td>${esc(po.readyByDate || '—')}</td>
+          <td>
+            <button class="btn btn-sm edit-btn" data-id="${po.id}">${t('action.edit')}</button>
+            <button class="btn btn-sm btn-danger del-btn" data-id="${po.id}">${t('action.delete')}</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    tbody.querySelectorAll('.del-btn').forEach((btn) => btn.addEventListener('click', async () => {
+      if (!confirm(t('common.confirmDelete'))) return;
+      await api(`purchase-orders?id=${btn.dataset.id}`, { method: 'DELETE' });
+      renderPurchaseOrdersTab();
+    }));
+    tbody.querySelectorAll('.edit-btn').forEach((btn) => btn.addEventListener('click', () => {
+      const po = pos.find((x) => x.id === btn.dataset.id);
+      openPOModal(po, suppliers, quotes);
+    }));
+
+    document.getElementById('add-po-btn').addEventListener('click', () => openPOModal(null, suppliers, quotes));
+  }
+
+  function openPOModal(po, suppliers, quotes) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const isEdit = !!po;
+    const items = (po && po.items && po.items.length) ? po.items.map((it) => ({ ...it })) : [{ description: '', qty: 1, unitCost: 0 }];
+
+    function itemRowsHtml() {
+      return items.map((it, idx) => `
+        <tr>
+          <td><input data-it="description" data-idx="${idx}" value="${esc(it.description || '')}"></td>
+          <td><input data-it="qty" data-idx="${idx}" type="number" min="0" value="${esc(it.qty ?? 1)}"></td>
+          <td><input data-it="unitCost" data-idx="${idx}" type="number" min="0" step="0.01" value="${esc(it.unitCost ?? 0)}"></td>
+          <td>${((Number(it.qty) || 0) * (Number(it.unitCost) || 0)).toFixed(2)}</td>
+          <td><button type="button" class="btn btn-sm btn-danger" data-remove-it="${idx}">✕</button></td>
+        </tr>`).join('');
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <h3>${isEdit ? t('action.edit') : t('action.add')} — ${t('procurement.posTab')}</h3>
+      <form id="po-form">
+        <div class="field-row">
+          <div class="field">
+            <label>${t('procurement.supplier')}</label>
+            <select name="supplierId">${suppliers.map((s) => `<option value="${s.id}" ${po && po.supplierId === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
+          </div>
+          <div class="field">
+            <label>${t('procurement.linkedQuote')}</label>
+            <select name="linkedQuoteId"><option value="">${t('procurement.none')}</option>${quotes.map((q) => `<option value="${q.id}" ${po && po.linkedQuoteId === q.id ? 'selected' : ''}>${esc(q.quoteNumber)}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>${t('procurement.leadTime')}</label><input name="leadTimeDays" type="number" min="0" value="${po && po.leadTimeDays != null ? po.leadTimeDays : ''}"></div>
+          <div class="field"><label>${t('procurement.readyBy')}</label><input name="readyByDate" type="date" value="${po && po.readyByDate ? po.readyByDate : ''}"></div>
+        </div>
+        <div class="field">
+          <label>${t('quotes.currency')}</label>
+          <select name="currency">${['USD', 'RMB', 'EUR'].map((c) => `<option value="${c}" ${po && po.currency === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        </div>
+        ${isEdit ? `<div class="field"><label>${t('procurement.status')}</label><select name="status">${PO_STATUSES.map((s) => `<option value="${s}" ${po.status === s ? 'selected' : ''}>${esc(s.replace('_', ' '))}</option>`).join('')}</select></div>` : ''}
+        <label style="font-size:12px;font-weight:600;color:var(--muted);">${t('procurement.items')}</label>
+        <table class="line-items-table">
+          <thead><tr><th>${t('procurement.description')}</th><th>${t('procurement.qty')}</th><th>${t('procurement.unitCost')}</th><th>${t('procurement.totalCost')}</th><th></th></tr></thead>
+          <tbody id="it-body">${itemRowsHtml()}</tbody>
+        </table>
+        <button type="button" class="btn btn-sm" id="add-item-btn">${t('procurement.addLine')}</button>
+        <div class="field" style="margin-top:14px;"><label>${t('quotes.notes')}</label><textarea name="notes">${esc(po ? po.notes : '')}</textarea></div>
+      </form>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="po-cancel">${t('action.cancel')}</button>
+        <button type="submit" class="btn btn-primary" form="po-form">${t('action.save')}</button>
+      </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    modal.querySelector('#po-cancel').addEventListener('click', () => overlay.remove());
+
+    function refreshItBody() {
+      modal.querySelector('#it-body').innerHTML = itemRowsHtml();
+      bindItInputs();
+    }
+    function bindItInputs() {
+      modal.querySelectorAll('[data-it]').forEach((input) => {
+        input.addEventListener('input', () => {
+          const idx = Number(input.dataset.idx);
+          const field = input.dataset.it;
+          items[idx][field] = field === 'description' ? input.value : Number(input.value);
+          refreshItBody();
+        });
+      });
+      modal.querySelectorAll('[data-remove-it]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          items.splice(Number(btn.dataset.removeIt), 1);
+          if (!items.length) items.push({ description: '', qty: 1, unitCost: 0 });
+          refreshItBody();
+        });
+      });
+    }
+    bindItInputs();
+
+    modal.querySelector('#add-item-btn').addEventListener('click', () => {
+      items.push({ description: '', qty: 1, unitCost: 0 });
+      refreshItBody();
+    });
+
+    modal.querySelector('#po-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const payload = {
+        supplierId: form.supplierId.value,
+        linkedQuoteId: form.linkedQuoteId.value || null,
+        leadTimeDays: form.leadTimeDays.value ? Number(form.leadTimeDays.value) : null,
+        readyByDate: form.readyByDate.value || null,
+        currency: form.currency.value,
+        notes: form.notes.value,
+        items,
+      };
+      if (isEdit) {
+        payload.id = po.id;
+        if (form.status) payload.status = form.status.value;
+        await api('purchase-orders', { method: 'PUT', body: payload });
+      } else {
+        await api('purchase-orders', { method: 'POST', body: payload });
+      }
+      overlay.remove();
+      toast('Saved');
+      renderPurchaseOrdersTab();
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Page: Scheduling — month calendar of quote/PO ready-by dates
+  // ---------------------------------------------------------------------
+  async function renderScheduling() {
+    if (!S.schedulingMonth) {
+      const now = new Date();
+      S.schedulingMonth = { y: now.getFullYear(), m: now.getMonth() };
+    }
+    contentEl.innerHTML = `<h2 class="page-title">${t('scheduling.title')}</h2><div id="sched-container">${t('common.loading')}</div>`;
+
+    const [quotes, pos] = await Promise.all([api('quotes').catch(() => []), api('purchase-orders').catch(() => [])]);
+
+    function itemsForMonth(y, m) {
+      const items = [];
+      quotes.forEach((q) => {
+        if (!q.readyByDate) return;
+        const d = new Date(q.readyByDate);
+        if (d.getFullYear() === y && d.getMonth() === m) items.push({ day: d.getDate(), label: `Q ${q.quoteNumber}`, type: 'quote' });
+      });
+      pos.forEach((po) => {
+        if (!po.readyByDate) return;
+        const d = new Date(po.readyByDate);
+        if (d.getFullYear() === y && d.getMonth() === m) items.push({ day: d.getDate(), label: `PO ${po.poNumber}`, type: 'po' });
+      });
+      return items;
+    }
+
+    function renderMonth() {
+      const { y, m } = S.schedulingMonth;
+      const items = itemsForMonth(y, m);
+      const firstDay = new Date(y, m, 1);
+      const startWeekday = firstDay.getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const monthLabel = firstDay.toLocaleDateString(S.lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'long', year: 'numeric' });
+
+      const itemsByDay = {};
+      items.forEach((it) => { (itemsByDay[it.day] = itemsByDay[it.day] || []).push(it); });
+
+      let cells = '';
+      for (let i = 0; i < startWeekday; i++) cells += `<div class="cal-cell empty"></div>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dayItems = itemsByDay[d] || [];
+        cells += `<div class="cal-cell"><div class="cal-day">${d}</div>${dayItems.map((it) => `<div class="cal-chip cal-chip-${it.type}">${esc(it.label)}</div>`).join('')}</div>`;
+      }
+
+      document.getElementById('sched-container').innerHTML = `
+        <div class="toolbar">
+          <div>
+            <button class="btn btn-sm" id="prev-month">${t('scheduling.prev')}</button>
+            <strong style="margin:0 10px;">${esc(monthLabel)}</strong>
+            <button class="btn btn-sm" id="next-month">${t('scheduling.next')}</button>
+          </div>
+          <button class="btn btn-sm" id="today-btn">${t('scheduling.today')}</button>
+        </div>
+        <div class="cal-grid cal-header">${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => `<div>${d}</div>`).join('')}</div>
+        <div class="cal-grid">${cells}</div>
+        ${!items.length ? `<div class="muted" style="margin-top:16px;">${t('scheduling.noItems')}</div>` : ''}
+      `;
+
+      document.getElementById('prev-month').addEventListener('click', () => {
+        S.schedulingMonth = m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 };
+        renderMonth();
+      });
+      document.getElementById('next-month').addEventListener('click', () => {
+        S.schedulingMonth = m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 };
+        renderMonth();
+      });
+      document.getElementById('today-btn').addEventListener('click', () => {
+        const now = new Date();
+        S.schedulingMonth = { y: now.getFullYear(), m: now.getMonth() };
+        renderMonth();
+      });
+    }
+
+    renderMonth();
+  }
+
+  // ---------------------------------------------------------------------
+  // Page: Expenses
+  // ---------------------------------------------------------------------
+  async function renderExpenses() {
+    contentEl.innerHTML = `
+      <h2 class="page-title">${t('expenses.title')}</h2>
+      <div class="toolbar"><div></div><button class="btn btn-primary" id="add-btn">+ ${t('action.add')}</button></div>
+      <div class="card"><table><thead><tr><th>${t('expenses.date')}</th><th>${t('expenses.category')}</th><th>${t('expenses.amount')}</th><th>${t('expenses.submittedBy')}</th><th>${t('expenses.status')}</th><th></th></tr></thead><tbody id="table-body"><tr class="empty-row"><td colspan="6">${t('common.loading')}</td></tr></tbody></table></div>
+    `;
+
+    const CATEGORY_OPTIONS = ['travel', 'meals', 'shipping', 'office', 'other'].map((v) => ({ value: v, label: t('expenses.cat.' + v) }));
+    const isApprover = S.user.role === 'admin' || S.user.role === 'finance';
+
+    const fields = [
+      { name: 'category', label: t('expenses.category'), type: 'select', options: CATEGORY_OPTIONS },
+      { name: 'amount', label: t('expenses.amount'), type: 'number', step: '0.01' },
+      { name: 'currency', label: t('quotes.currency'), type: 'select', options: [{ value: 'USD', label: 'USD' }, { value: 'RMB', label: 'RMB' }, { value: 'EUR', label: 'EUR' }] },
+      { name: 'description', label: t('expenses.description') },
+      { name: 'date', label: t('expenses.date'), type: 'date' },
+    ];
+
+    async function load() {
+      const list = await api('expenses');
+      const tbody = document.getElementById('table-body');
+      if (!list.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="6">${t('common.none')}</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map((e) => `
+        <tr>
+          <td>${esc(e.date || '')}</td>
+          <td>${esc(t('expenses.cat.' + e.category))}</td>
+          <td>${fmtMoney(e.amount, e.currency)}</td>
+          <td>${esc(e.submittedByName || '')}</td>
+          <td><span class="badge">${esc(e.status)}</span></td>
+          <td>
+            ${e.photoDataUrl ? `<a href="${e.photoDataUrl}" target="_blank" rel="noopener" class="btn btn-sm">${t('expenses.photo')}</a>` : ''}
+            ${isApprover && e.status === 'pending' ? `<button class="btn btn-sm" data-approve="${e.id}">${t('expenses.approve')}</button><button class="btn btn-sm btn-danger" data-reject="${e.id}">${t('expenses.reject')}</button>` : ''}
+            <button class="btn btn-sm btn-danger del-btn" data-id="${e.id}">${t('action.delete')}</button>
+          </td>
+        </tr>`).join('');
+
+      tbody.querySelectorAll('[data-approve]').forEach((btn) => btn.addEventListener('click', async () => {
+        await api('expenses', { method: 'PUT', body: { id: btn.dataset.approve, status: 'approved' } });
+        load();
+      }));
+      tbody.querySelectorAll('[data-reject]').forEach((btn) => btn.addEventListener('click', async () => {
+        await api('expenses', { method: 'PUT', body: { id: btn.dataset.reject, status: 'rejected' } });
+        load();
+      }));
+      tbody.querySelectorAll('.del-btn').forEach((btn) => btn.addEventListener('click', async () => {
+        if (!confirm(t('common.confirmDelete'))) return;
+        await api(`expenses?id=${btn.dataset.id}`, { method: 'DELETE' });
+        load();
+      }));
+    }
+
+    document.getElementById('add-btn').addEventListener('click', () => openExpenseModal(fields, load));
+
+    load();
+  }
+
+  function openExpenseModal(fields, onSaved) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `<h3>${t('action.add')}</h3><form id="expense-form"></form>`;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const form = modal.querySelector('#expense-form');
+    fields.forEach((f) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      if (f.type === 'select') {
+        wrap.innerHTML = `<label>${esc(f.label)}</label><select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select>`;
+      } else {
+        wrap.innerHTML = `<label>${esc(f.label)}</label><input type="${f.type || 'text'}" name="${f.name}" ${f.step ? `step="${f.step}"` : ''}>`;
+      }
+      form.appendChild(wrap);
+    });
+    const photoWrap = document.createElement('div');
+    photoWrap.className = 'field';
+    photoWrap.innerHTML = `<label>${t('expenses.photo')}</label><input type="file" name="photo" accept="image/*">`;
+    form.appendChild(photoWrap);
+
+    const actions = document.createElement('div');
+    actions.className = 'modal-actions';
+    actions.innerHTML = `<button type="button" class="btn" id="exp-cancel">${t('action.cancel')}</button><button type="submit" class="btn btn-primary" form="expense-form">${t('action.save')}</button>`;
+    modal.appendChild(actions);
+    modal.querySelector('#exp-cancel').addEventListener('click', () => overlay.remove());
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const out = {};
+      fields.forEach((f) => { out[f.name] = f.type === 'number' ? Number(form[f.name].value) : form[f.name].value; });
+      const file = form.querySelector('[name="photo"]').files[0];
+
+      function finish(photoDataUrl) {
+        api('expenses', { method: 'POST', body: { ...out, photoDataUrl } })
+          .then(() => { overlay.remove(); toast('Saved'); onSaved(); })
+          .catch((err) => toast(err.message));
+      }
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => finish(reader.result);
+        reader.readAsDataURL(file);
+      } else {
+        finish(null);
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Page: Tasks
+  // ---------------------------------------------------------------------
+  async function renderTasks() {
+    const users = await api('users').catch(() => []);
+    renderCrudPage({
+      titleKey: 'tasks.title',
+      apiPath: 'tasks',
+      page: 'tasks',
+      columns: [
+        { key: 'title', label: t('tasks.taskTitle') },
+        { key: 'assignedTo', label: t('tasks.assignedTo'), render: (i) => esc((users.find((u) => u.id === i.assignedTo) || {}).name || '—') },
+        { key: 'dueDate', label: t('tasks.dueDate') },
+        { key: 'status', label: t('tasks.status'), render: (i) => `<span class="badge">${esc(t('tasks.status.' + (i.status || 'open')))}</span>` },
+      ],
+      fields: [
+        { name: 'title', label: t('tasks.taskTitle'), required: true },
+        { name: 'description', label: t('tasks.description'), type: 'textarea' },
+        { name: 'assignedTo', label: t('tasks.assignedTo'), type: 'select', options: users.map((u) => ({ value: u.id, label: u.name })) },
+        { name: 'dueDate', label: t('tasks.dueDate'), type: 'date' },
+        { name: 'status', label: t('tasks.status'), type: 'select', options: [{ value: 'open', label: t('tasks.status.open') }, { value: 'done', label: t('tasks.status.done') }] },
+      ],
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Page: Reports
+  // ---------------------------------------------------------------------
+  async function renderReports() {
+    contentEl.innerHTML = `<h2 class="page-title">${t('reports.title')}</h2><div id="reports-container">${t('common.loading')}</div>`;
+    const r = await api('reports');
+    const container = document.getElementById('reports-container');
+
+    function rankedList(obj) {
+      const entries = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+      if (!entries.length) return `<div class="muted">${t('reports.noData')}</div>`;
+      return `<table><tbody>${entries.map(([k, v]) => `<tr><td>${esc(k)}</td><td style="text-align:right;">$${Number(v).toFixed(2)}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    container.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">${t('reports.openPipelineValue')}</div><div class="value">$${Number(r.openPipelineValue).toFixed(2)}</div></div>
+        <div class="stat-card"><div class="label">${t('reports.openQuoteCount')}</div><div class="value">${r.openQuoteCount}</div></div>
+        <div class="stat-card"><div class="label">${t('reports.pendingExpenses')}</div><div class="value">$${Number(r.pendingExpensesTotal).toFixed(2)}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+        <div class="card" style="padding:16px;"><h3 style="margin-top:0;font-size:14px;">${t('reports.revenueByBuyer')}</h3>${rankedList(r.revenueByBuyer)}</div>
+        <div class="card" style="padding:16px;"><h3 style="margin-top:0;font-size:14px;">${t('reports.revenueByProduct')}</h3>${rankedList(r.revenueByProduct)}</div>
+        <div class="card" style="padding:16px;"><h3 style="margin-top:0;font-size:14px;">${t('reports.spendBySupplier')}</h3>${rankedList(r.spendBySupplier)}</div>
+        <div class="card" style="padding:16px;"><h3 style="margin-top:0;font-size:14px;">${t('reports.expensesByCategory')}</h3>${rankedList(r.expensesByCategory)}</div>
+      </div>
+    `;
+  }
+
+  // ---------------------------------------------------------------------
   // Page: Settings
   // ---------------------------------------------------------------------
   async function renderSettings() {
@@ -986,6 +1678,11 @@
     { value: 'products', label: t('nav.products') },
     { value: 'quotes', label: t('nav.quotes') },
     { value: 'payments', label: t('nav.payments') },
+    { value: 'procurement', label: t('nav.procurement') },
+    { value: 'scheduling', label: t('nav.scheduling') },
+    { value: 'expenses', label: t('nav.expenses') },
+    { value: 'tasks', label: t('nav.tasks') },
+    { value: 'reports', label: t('nav.reports') },
   ];
 
   function renderUsers() {
@@ -1086,6 +1783,11 @@
       case 'products': return renderProductsWrapped();
       case 'quotes': return renderQuotes();
       case 'payments': return renderPayments();
+      case 'procurement': return renderProcurement();
+      case 'scheduling': return renderScheduling();
+      case 'expenses': return renderExpenses();
+      case 'tasks': return renderTasks();
+      case 'reports': return renderReports();
       case 'settings': return renderSettings();
       case 'users': return renderUsers();
       case 'activity': return renderActivity();

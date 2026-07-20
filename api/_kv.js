@@ -16,6 +16,7 @@ const WRITABLE_KEYS = new Set([
   'activity',
   'settings',
   'suppliers',
+  'purchaseOrders',
   'shipments',
   'tasks',
   'expenses',

@@ -12,13 +12,16 @@ function strip(u) {
 module.exports = async function handler(req, res) {
   const session = await requireAuth(req, res, {});
   if (!session) return;
-  if (session.role !== 'admin') return sendJson(res, 403, { error: 'Admin only' });
 
   const users = (await kvGet('users')) || [];
 
+  // Any authenticated user can read the (PIN-free) user list, e.g. to
+  // populate a task "assigned to" picker. Writes stay admin-only.
   if (req.method === 'GET') {
     return sendJson(res, 200, users.map(strip));
   }
+
+  if (session.role !== 'admin') return sendJson(res, 403, { error: 'Admin only' });
 
   if (req.method === 'POST') {
     const { name, role, pin, pages } = req.body || {};
