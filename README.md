@@ -56,8 +56,13 @@ database server to manage.
 - Expenses — photo capture (stored as a data URL, no blob storage wired up
   yet) + category (built-ins, or type your own under "Other" and optionally
   save it for reuse) + Finance/Admin approval, plus a period-total stat
-  (last 24h / 7d / 30d / 1y, default 30d) broken out by currency
-- Tasks — generic assignable task list with due dates
+  (last 24h / 7d / 30d / 1y, default 30d) broken out by currency. A gear
+  icon on the page opens a settings panel to rename/delete saved custom
+  categories (renames cascade onto existing expense records) and, for
+  admins, change the app's default currency.
+- Tasks — generic assignable task list with due dates. A notification bell
+  in the topbar badges unread task assignments (polls every 45s) and opens
+  a dropdown that jumps to the Tasks page; the badge clears on visiting it.
 - Reports — revenue by buyer/product, spend by supplier, approved expenses
   by category, open pipeline value, computed on the fly (no stored key)
 
