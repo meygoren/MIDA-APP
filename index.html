@@ -70,6 +70,21 @@
     #content { padding: 16px; }
   }
 
+  /* Notifications */
+  #notif-wrap { position: relative; margin-right: auto; }
+  #notif-bell { position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); background: #fff; border-radius: 8px; color: var(--text); padding: 0; }
+  #notif-badge { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 3px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; border-radius: 999px; display: none; }
+  #notif-badge.show { display: block; }
+  #notif-dropdown { position: absolute; top: 46px; left: 0; width: 300px; max-height: 360px; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.14); z-index: 150; display: none; }
+  #notif-dropdown.open { display: block; }
+  .notif-header { padding: 10px 14px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .notif-item { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 13px; }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:hover { background: var(--bg); }
+  .notif-item .notif-item-title { font-weight: 600; }
+  .notif-item .notif-item-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .notif-empty { padding: 24px 14px; text-align: center; color: var(--muted); font-size: 13px; }
+
   h2.page-title { margin: 0 0 20px; font-size: 20px; }
   .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
   .btn { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-size: 13px; }
@@ -154,6 +169,16 @@
   </div>
   <div id="main">
     <div id="topbar">
+      <div id="notif-wrap">
+        <button id="notif-bell" aria-label="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notif-badge"></span>
+        </button>
+        <div id="notif-dropdown">
+          <div class="notif-header" id="notif-title"></div>
+          <div id="notif-list"></div>
+        </div>
+      </div>
       <select id="lang-toggle">
         <option value="en">English</option>
         <option value="zh">中文</option>
@@ -191,6 +216,7 @@
       'action.delete': 'Delete',
       'action.save': 'Save',
       'action.cancel': 'Cancel',
+      'action.close': 'Close',
       'action.print': 'Print',
       'action.whatsapp': 'WhatsApp',
       'common.confirmDelete': 'Delete this record?',
@@ -322,6 +348,10 @@
       'expenses.customCategoryName': 'Custom Category Name',
       'expenses.customCategoryRequired': 'Please enter a category name',
       'expenses.saveCategory': 'Save this category for future use',
+      'expenses.settingsTitle': 'Expense Settings',
+      'expenses.manageCategories': 'Custom Categories',
+      'expenses.noCategoriesSaved': 'No custom categories saved yet.',
+      'expenses.adminOnlyCurrency': 'Only Admin can change the default currency.',
       'tasks.title': 'Tasks',
       'tasks.taskTitle': 'Title',
       'tasks.description': 'Description',
@@ -330,6 +360,9 @@
       'tasks.status': 'Status',
       'tasks.status.open': 'Open',
       'tasks.status.done': 'Done',
+      'notif.title': 'Notifications',
+      'notif.empty': 'No new notifications',
+      'notif.assigned': 'New task assigned to you',
       'reports.title': 'Reports',
       'reports.revenueByBuyer': 'Revenue by Buyer',
       'reports.revenueByProduct': 'Revenue by Product',
@@ -358,6 +391,7 @@
       'action.delete': '删除',
       'action.save': '保存',
       'action.cancel': '取消',
+      'action.close': '关闭',
       'action.print': '打印',
       'action.whatsapp': 'WhatsApp',
       'common.confirmDelete': '确定删除此记录吗？',
@@ -489,6 +523,10 @@
       'expenses.customCategoryName': '自定义类别名称',
       'expenses.customCategoryRequired': '请输入类别名称',
       'expenses.saveCategory': '保存此类别以便将来使用',
+      'expenses.settingsTitle': '费用设置',
+      'expenses.manageCategories': '自定义类别',
+      'expenses.noCategoriesSaved': '尚未保存任何自定义类别。',
+      'expenses.adminOnlyCurrency': '只有管理员可以更改默认货币。',
       'tasks.title': '任务',
       'tasks.taskTitle': '标题',
       'tasks.description': '描述',
@@ -497,6 +535,9 @@
       'tasks.status': '状态',
       'tasks.status.open': '进行中',
       'tasks.status.done': '已完成',
+      'notif.title': '通知',
+      'notif.empty': '暂无新通知',
+      'notif.assigned': '有新任务分配给您',
       'reports.title': '报表',
       'reports.revenueByBuyer': '按买家的收入',
       'reports.revenueByProduct': '按产品的收入',
@@ -622,6 +663,7 @@
   pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
 
   function doLogout() {
+    stopNotificationPolling();
     S.token = null;
     S.user = null;
     localStorage.removeItem('wo_token');
@@ -630,6 +672,84 @@
     loginScreen.style.display = 'flex';
   }
   document.getElementById('logout-btn').addEventListener('click', doLogout);
+
+  // ---------------------------------------------------------------------
+  // Task-assignment notifications — polls the tasks list and flags any
+  // task assigned to the current user created since they last opened the
+  // Tasks page. No separate backend domain; derived from api('tasks').
+  // ---------------------------------------------------------------------
+  let notifPollHandle = null;
+  let notifItems = [];
+  const notifBell = document.getElementById('notif-bell');
+  const notifBadge = document.getElementById('notif-badge');
+  const notifDropdown = document.getElementById('notif-dropdown');
+  const notifList = document.getElementById('notif-list');
+
+  function tasksSeenKey() {
+    return `wo_tasks_seen_${S.user ? S.user.id : 'anon'}`;
+  }
+  function getTasksSeenAt() {
+    return Number(localStorage.getItem(tasksSeenKey()) || 0);
+  }
+  function markTasksSeen() {
+    localStorage.setItem(tasksSeenKey(), String(Date.now()));
+    notifItems = [];
+    renderNotifBadge();
+  }
+
+  function renderNotifBadge() {
+    const count = notifItems.length;
+    notifBadge.textContent = count > 9 ? '9+' : String(count);
+    notifBadge.classList.toggle('show', count > 0);
+  }
+
+  function renderNotifDropdown() {
+    document.getElementById('notif-title').textContent = t('notif.title');
+    notifList.innerHTML = notifItems.length
+      ? notifItems.map((task) => `
+          <div class="notif-item" data-task-id="${task.id}">
+            <div class="notif-item-title">${esc(task.title)}</div>
+            <div class="notif-item-meta">${t('notif.assigned')}${task.dueDate ? ` — ${t('tasks.dueDate')}: ${esc(task.dueDate)}` : ''}</div>
+          </div>`).join('')
+      : `<div class="notif-empty">${t('notif.empty')}</div>`;
+    notifList.querySelectorAll('.notif-item').forEach((el) => el.addEventListener('click', () => {
+      notifDropdown.classList.remove('open');
+      navigate('tasks');
+    }));
+  }
+
+  async function refreshNotifications() {
+    if (!S.user || !S.token) return;
+    try {
+      const tasks = await api('tasks');
+      const seenAt = getTasksSeenAt();
+      notifItems = tasks.filter((task) => task.assignedTo === S.user.id && task.status !== 'done' && (task.createdAt || 0) > seenAt);
+    } catch (e) {
+      notifItems = [];
+    }
+    renderNotifBadge();
+    if (notifDropdown.classList.contains('open')) renderNotifDropdown();
+  }
+
+  function startNotificationPolling() {
+    stopNotificationPolling();
+    refreshNotifications();
+    notifPollHandle = setInterval(refreshNotifications, 45000);
+  }
+  function stopNotificationPolling() {
+    if (notifPollHandle) clearInterval(notifPollHandle);
+    notifPollHandle = null;
+  }
+
+  notifBell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const opening = !notifDropdown.classList.contains('open');
+    notifDropdown.classList.toggle('open', opening);
+    if (opening) renderNotifDropdown();
+  });
+  document.addEventListener('click', (e) => {
+    if (!notifDropdown.contains(e.target) && e.target !== notifBell) notifDropdown.classList.remove('open');
+  });
 
   // ---------------------------------------------------------------------
   // Shell / nav
@@ -691,6 +811,7 @@
     renderNav();
     renderPage();
     setSidebar(false);
+    startNotificationPolling();
   }
 
   // ---------------------------------------------------------------------
@@ -1497,13 +1618,22 @@
           ${Object.keys(EXPENSE_PERIOD_DAYS).map((p) => `<button class="btn btn-sm period-btn" data-period="${p}">${t('expenses.periodToggle.' + p)}</button>`).join(' ')}
         </div>
       </div>
-      <div class="toolbar"><div></div><button class="btn btn-primary" id="add-btn">+ ${t('action.add')}</button></div>
+      <div class="toolbar">
+        <div></div>
+        <div>
+          <button class="btn btn-sm" id="expense-settings-btn" aria-label="${t('expenses.settingsTitle')}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button class="btn btn-primary" id="add-btn">+ ${t('action.add')}</button>
+        </div>
+      </div>
       <div class="card"><table><thead><tr><th>${t('expenses.date')}</th><th>${t('expenses.category')}</th><th>${t('expenses.amount')}</th><th>${t('expenses.submittedBy')}</th><th>${t('expenses.status')}</th><th></th></tr></thead><tbody id="table-body"><tr class="empty-row"><td colspan="6">${t('common.loading')}</td></tr></tbody></table></div>
     `;
 
     const isApprover = S.user.role === 'admin' || S.user.role === 'finance';
     let allExpenses = [];
     let customCategories = [];
+    let appSettings = { defaultCurrency: 'RMB' };
 
     function buildCategoryOptions() {
       const builtins = ['travel', 'meals', 'shipping', 'office'].map((v) => ({ value: v, label: t('expenses.cat.' + v) }));
@@ -1541,9 +1671,14 @@
     }));
 
     async function load() {
-      const [list, cats] = await Promise.all([api('expenses'), api('expense-categories').catch(() => [])]);
+      const [list, cats, settings] = await Promise.all([
+        api('expenses'),
+        api('expense-categories').catch(() => []),
+        api('settings').catch(() => appSettings),
+      ]);
       allExpenses = list;
       customCategories = cats;
+      appSettings = settings;
       renderPeriodTotal();
 
       const tbody = document.getElementById('table-body');
@@ -1580,12 +1715,109 @@
       }));
     }
 
-    document.getElementById('add-btn').addEventListener('click', () => openExpenseModal(buildCategoryOptions(), load));
+    document.getElementById('add-btn').addEventListener('click', () => {
+      openExpenseModal(buildCategoryOptions(), appSettings.defaultCurrency || 'RMB', load);
+    });
+    document.getElementById('expense-settings-btn').addEventListener('click', () => {
+      openExpenseSettingsModal(customCategories, S.user.role === 'admin', appSettings.defaultCurrency || 'RMB', load);
+    });
 
     load();
   }
 
-  function openExpenseModal(categoryOptions, onSaved) {
+  function openExpenseSettingsModal(customCategories, isAdmin, currentDefaultCurrency, onChanged) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `<h3>${t('expenses.settingsTitle')}</h3>`;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const currencyWrap = document.createElement('div');
+    currencyWrap.className = 'field';
+    if (isAdmin) {
+      currencyWrap.innerHTML = `
+        <label>${t('settings.defaultCurrency')}</label>
+        <select id="default-currency-select">${['RMB', 'USD', 'EUR'].map((c) => `<option value="${c}" ${currentDefaultCurrency === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+      `;
+    } else {
+      currencyWrap.innerHTML = `<label>${t('settings.defaultCurrency')}</label><div class="muted">${esc(currentDefaultCurrency)} — ${t('expenses.adminOnlyCurrency')}</div>`;
+    }
+    modal.appendChild(currencyWrap);
+
+    const catsWrap = document.createElement('div');
+    catsWrap.style.marginTop = '18px';
+    catsWrap.innerHTML = `<label style="font-size:12px;font-weight:600;color:var(--muted);">${t('expenses.manageCategories')}</label>`;
+    const catsList = document.createElement('div');
+    catsList.style.marginTop = '8px';
+    catsWrap.appendChild(catsList);
+    modal.appendChild(catsWrap);
+
+    function renderCatsList() {
+      if (!customCategories.length) {
+        catsList.innerHTML = `<div class="muted" style="font-size:13px;">${t('expenses.noCategoriesSaved')}</div>`;
+        return;
+      }
+      catsList.innerHTML = customCategories.map((c, idx) => `
+        <div class="field-row" style="grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin-bottom:8px;">
+          <input type="text" data-idx="${idx}" class="cat-rename-input" value="${esc(c)}">
+          <button type="button" class="btn btn-sm cat-save-btn" data-old="${esc(c)}" data-idx="${idx}">${t('action.save')}</button>
+          <button type="button" class="btn btn-sm btn-danger cat-del-btn" data-name="${esc(c)}">${t('action.delete')}</button>
+        </div>`).join('');
+
+      catsList.querySelectorAll('.cat-save-btn').forEach((btn) => btn.addEventListener('click', async () => {
+        const idx = Number(btn.dataset.idx);
+        const input = catsList.querySelector(`.cat-rename-input[data-idx="${idx}"]`);
+        const newName = input.value.trim();
+        const oldName = btn.dataset.old;
+        if (!newName || newName === oldName) return;
+        try {
+          customCategories = await api('expense-categories', { method: 'PUT', body: { oldName, newName } });
+          toast('Saved');
+          renderCatsList();
+        } catch (err) {
+          toast(err.message);
+        }
+      }));
+      catsList.querySelectorAll('.cat-del-btn').forEach((btn) => btn.addEventListener('click', async () => {
+        if (!confirm(t('common.confirmDelete'))) return;
+        try {
+          customCategories = await api(`expense-categories?name=${encodeURIComponent(btn.dataset.name)}`, { method: 'DELETE' });
+          renderCatsList();
+        } catch (err) {
+          toast(err.message);
+        }
+      }));
+    }
+    renderCatsList();
+
+    const actions = document.createElement('div');
+    actions.className = 'modal-actions';
+    actions.innerHTML = `<button type="button" class="btn" id="exp-settings-close">${t('action.close')}</button>${isAdmin ? `<button type="button" class="btn btn-primary" id="exp-settings-save">${t('action.save')}</button>` : ''}`;
+    modal.appendChild(actions);
+
+    function close() {
+      overlay.remove();
+      onChanged();
+    }
+    modal.querySelector('#exp-settings-close').addEventListener('click', close);
+    if (isAdmin) {
+      modal.querySelector('#exp-settings-save').addEventListener('click', async () => {
+        const newCurrency = document.getElementById('default-currency-select').value;
+        try {
+          await api('settings', { method: 'PUT', body: { defaultCurrency: newCurrency } });
+          toast('Saved');
+          close();
+        } catch (err) {
+          toast(err.message);
+        }
+      });
+    }
+  }
+
+  function openExpenseModal(categoryOptions, defaultCurrency, onSaved) {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     const modal = document.createElement('div');
@@ -1628,7 +1860,7 @@
       const wrap = document.createElement('div');
       wrap.className = 'field';
       if (f.type === 'select') {
-        wrap.innerHTML = `<label>${esc(f.label)}</label><select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}" ${f.name === 'currency' && o.value === 'RMB' ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
+        wrap.innerHTML = `<label>${esc(f.label)}</label><select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}" ${f.name === 'currency' && o.value === defaultCurrency ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
       } else {
         wrap.innerHTML = `<label>${esc(f.label)}</label><input type="${f.type || 'text'}" name="${f.name}" ${f.step ? `step="${f.step}"` : ''}>`;
       }
@@ -1693,6 +1925,7 @@
   // Page: Tasks
   // ---------------------------------------------------------------------
   async function renderTasks() {
+    markTasksSeen();
     const users = await api('users').catch(() => []);
     renderCrudPage({
       titleKey: 'tasks.title',
